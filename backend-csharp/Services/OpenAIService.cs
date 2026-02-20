@@ -113,6 +113,47 @@ public class OpenAIService
         }
     }
 
+    public async IAsyncEnumerable<string> ChatStreamAsync(Models.ChatMessage[] messages)
+    {
+        if (_client == null)
+        {
+            throw new InvalidOperationException("ChatClient not initialized. Check your configuration.");
+        }
+
+        var chatMessages = messages.Select(m => m.Role.ToLowerInvariant() switch
+        {
+            "system" => (OpenAI.Chat.ChatMessage)new SystemChatMessage(m.Content),
+            "assistant" => new AssistantChatMessage(m.Content),
+            "user" => new UserChatMessage(m.Content),
+            _ => new UserChatMessage(m.Content)
+        }).ToList();
+
+        if (!chatMessages.Any(m => m is SystemChatMessage))
+        {
+            chatMessages.Insert(0, new SystemChatMessage("You are Dadi, a helpful AI assistant. Provide clear, concise, and accurate responses."));
+        }
+
+        var options = new ChatCompletionOptions
+        {
+            MaxOutputTokenCount = 1000,
+            FrequencyPenalty = 0,
+            PresencePenalty = 0
+        };
+
+        var streamingUpdates = _client.CompleteChatStreamingAsync(chatMessages, options);
+
+        await foreach (var update in streamingUpdates)
+        {
+            foreach (var contentPart in update.ContentUpdate)
+            {
+                if (!string.IsNullOrEmpty(contentPart.Text))
+                {
+                    yield return contentPart.Text;
+                }
+            }
+        }
+    }
+
     public bool IsConfigured()
     {
         return _client != null;

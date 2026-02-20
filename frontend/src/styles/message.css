@@ -55,6 +55,8 @@
   line-height: 1.5;
   word-wrap: break-word;
   white-space: pre-wrap;
+  transition: height 0.1s ease-out;
+  will-change: contents;
 }
 
 .message-user .message-content {
@@ -113,4 +115,19 @@
 .message-content pre code {
   background-color: transparent;
   padding: 0;
+}
+
+.message-content.streaming::after {
+  content: '▋';
+  animation: blink 1s step-end infinite;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
 }

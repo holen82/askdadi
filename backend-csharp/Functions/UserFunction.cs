@@ -1,8 +1,8 @@
 using DadiChatBot.Models;
 using DadiChatBot.Services;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 
 namespace DadiChatBot.Functions;
@@ -19,8 +19,8 @@ public class UserFunction
     }
 
     [Function("user")]
-    public IActionResult Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user")] HttpRequest req)
+    public async Task<HttpResponseData> Run(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user")] HttpRequestData req)
     {
         _logger.LogInformation("User info request received");
 
@@ -29,11 +29,13 @@ public class UserFunction
         if (user == null)
         {
             _logger.LogWarning("No user found in request headers");
-            return new UnauthorizedObjectResult(new ErrorResponse
+            var unauthorizedResponse = req.CreateResponse(System.Net.HttpStatusCode.Unauthorized);
+            await unauthorizedResponse.WriteAsJsonAsync(new ErrorResponse
             {
                 Error = "Unauthorized",
                 Message = "User not authenticated"
             });
+            return unauthorizedResponse;
         }
 
         var email = _authService.GetUserEmail(user);
@@ -41,21 +43,21 @@ public class UserFunction
         if (!_authService.IsWhitelisted(email))
         {
             _logger.LogWarning("User not whitelisted: {Email}", email);
-            return new ObjectResult(new ErrorResponse
+            var forbiddenResponse = req.CreateResponse(System.Net.HttpStatusCode.Forbidden);
+            await forbiddenResponse.WriteAsJsonAsync(new ErrorResponse
             {
                 Error = "Forbidden",
                 Message = "User not authorized to access this application"
-            })
-            {
-                StatusCode = StatusCodes.Status403Forbidden
-            };
+            });
+            return forbiddenResponse;
         }
 
         _logger.LogInformation("User authenticated successfully: {Email}", email);
 
         var name = _authService.GetUserName(user);
 
-        return new OkObjectResult(new UserInfoResponse
+        var okResponse = req.CreateResponse(System.Net.HttpStatusCode.OK);
+        await okResponse.WriteAsJsonAsync(new UserInfoResponse
         {
             Email = email ?? string.Empty,
             Name = name,
@@ -63,5 +65,6 @@ public class UserFunction
             UserId = user.UserId,
             IsAuthenticated = true
         });
+        return okResponse;
     }
 }

@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using DadiChatBot.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 
 namespace DadiChatBot.Services;
@@ -31,9 +32,9 @@ public class AuthService
         }
     }
 
-    public User? ExtractUserFromHeaders(HttpRequest request)
+    public User? ExtractUserFromHeaders(HttpRequestData request)
     {
-        if (!request.Headers.TryGetValue("x-ms-client-principal", out var userHeader))
+        if (!request.Headers.TryGetValues("x-ms-client-principal", out var userHeaders) || !userHeaders.Any())
         {
             _logger.LogDebug("x-ms-client-principal header not found");
             
@@ -59,7 +60,8 @@ public class AuthService
 
         try
         {
-            var decodedBytes = Convert.FromBase64String(userHeader.ToString());
+            var userHeader = userHeaders.First();
+            var decodedBytes = Convert.FromBase64String(userHeader);
             var decodedUser = Encoding.UTF8.GetString(decodedBytes);
             
             // Log the full decoded JSON to see what we're getting

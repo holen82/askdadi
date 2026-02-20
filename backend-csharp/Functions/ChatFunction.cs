@@ -1,9 +1,11 @@
+using System.Text;
 using System.Text.Json;
 using DadiChatBot.Models;
 using DadiChatBot.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 
 namespace DadiChatBot.Functions;
@@ -25,8 +27,8 @@ public class ChatFunction
     }
 
     [Function("chat")]
-    public async Task<IActionResult> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "chat")] HttpRequest req)
+    public async Task<HttpResponseData> Run(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "chat")] HttpRequestData req)
     {
         _logger.LogInformation("Chat request received");
 
@@ -35,11 +37,13 @@ public class ChatFunction
         if (user == null)
         {
             _logger.LogWarning("No user found in request headers");
-            return new UnauthorizedObjectResult(new ErrorResponse
+            var unauthorizedResponse = req.CreateResponse(System.Net.HttpStatusCode.Unauthorized);
+            await unauthorizedResponse.WriteAsJsonAsync(new ErrorResponse
             {
                 Error = "Unauthorized",
                 Message = "User not authenticated"
             });
+            return unauthorizedResponse;
         }
 
         var email = _authService.GetUserEmail(user);
@@ -47,14 +51,13 @@ public class ChatFunction
         if (!_authService.IsWhitelisted(email))
         {
             _logger.LogWarning("User not whitelisted: {Email}", email);
-            return new ObjectResult(new ErrorResponse
+            var forbiddenResponse = req.CreateResponse(System.Net.HttpStatusCode.Forbidden);
+            await forbiddenResponse.WriteAsJsonAsync(new ErrorResponse
             {
                 Error = "Forbidden",
                 Message = "User not authorized to access this application"
-            })
-            {
-                StatusCode = StatusCodes.Status403Forbidden
-            };
+            });
+            return forbiddenResponse;
         }
 
         ChatRequest? chatRequest;
@@ -68,33 +71,36 @@ public class ChatFunction
         catch (Exception ex)
         {
             _logger.LogError(ex, "Invalid request body");
-            return new BadRequestObjectResult(new ErrorResponse
+            var badRequestResponse = req.CreateResponse(System.Net.HttpStatusCode.BadRequest);
+            await badRequestResponse.WriteAsJsonAsync(new ErrorResponse
             {
                 Error = "Bad Request",
                 Message = "Invalid request body"
             });
+            return badRequestResponse;
         }
 
         if (chatRequest?.Messages == null || chatRequest.Messages.Length == 0)
         {
-            return new BadRequestObjectResult(new ErrorResponse
+            var badRequestResponse = req.CreateResponse(System.Net.HttpStatusCode.BadRequest);
+            await badRequestResponse.WriteAsJsonAsync(new ErrorResponse
             {
                 Error = "Bad Request",
                 Message = "Messages array is required and must not be empty"
             });
+            return badRequestResponse;
         }
 
         if (!_openAIService.IsConfigured())
         {
             _logger.LogError("OpenAI not configured");
-            return new ObjectResult(new ErrorResponse
+            var unavailableResponse = req.CreateResponse(System.Net.HttpStatusCode.ServiceUnavailable);
+            await unavailableResponse.WriteAsJsonAsync(new ErrorResponse
             {
                 Error = "Service Unavailable",
                 Message = "AI service is not configured"
-            })
-            {
-                StatusCode = StatusCodes.Status503ServiceUnavailable
-            };
+            });
+            return unavailableResponse;
         }
 
         try
@@ -102,27 +108,71 @@ public class ChatFunction
             _logger.LogInformation("Processing chat for user {Email} with {MessageCount} messages", 
                 email, chatRequest.Messages.Length);
 
+            var acceptHeader = req.Headers.GetValues("Accept").FirstOrDefault() ?? "";
+            if (acceptHeader.Contains("text/event-stream"))
+            {
+                return await StreamChatResponse(req, chatRequest.Messages);
+            }
+
             var response = await _openAIService.ChatAsync(chatRequest.Messages);
 
             _logger.LogInformation("Chat response generated successfully");
 
-            return new OkObjectResult(new ChatResponse
+            var okResponse = req.CreateResponse(System.Net.HttpStatusCode.OK);
+            await okResponse.WriteAsJsonAsync(new ChatResponse
             {
                 Message = response
             });
+            return okResponse;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing chat");
 
-            return new ObjectResult(new ErrorResponse
+            var errorResponse = req.CreateResponse(System.Net.HttpStatusCode.InternalServerError);
+            await errorResponse.WriteAsJsonAsync(new ErrorResponse
             {
                 Error = "Internal Server Error",
                 Message = ex.Message
-            })
+            });
+            return errorResponse;
+        }
+    }
+
+    private async Task<HttpResponseData> StreamChatResponse(HttpRequestData req, Models.ChatMessage[] messages)
+    {
+        var response = req.CreateResponse();
+        response.StatusCode = System.Net.HttpStatusCode.OK;
+        response.Headers.Add("Content-Type", "text/event-stream");
+        response.Headers.Add("Cache-Control", "no-cache");
+        response.Headers.Add("Connection", "keep-alive");
+
+        try
+        {
+            var bodyStream = response.Body;
+            var writer = new StreamWriter(bodyStream, Encoding.UTF8, leaveOpen: false);
+
+            await foreach (var chunk in _openAIService.ChatStreamAsync(messages))
             {
-                StatusCode = StatusCodes.Status500InternalServerError
-            };
+                var sseData = $"data: {JsonSerializer.Serialize(new { chunk })}\n\n";
+                await writer.WriteAsync(sseData);
+                await writer.FlushAsync();
+                await bodyStream.FlushAsync();
+            }
+
+            await writer.WriteAsync("data: [DONE]\n\n");
+            await writer.FlushAsync();
+            await bodyStream.FlushAsync();
+            
+            return response;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during streaming");
+            var errorData = $"data: {JsonSerializer.Serialize(new { error = ex.Message })}\n\n";
+            await response.Body.WriteAsync(Encoding.UTF8.GetBytes(errorData));
+            await response.Body.FlushAsync();
+            return response;
         }
     }
 }

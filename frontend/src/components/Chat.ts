@@ -126,42 +126,104 @@ async function handleSendMessage(): Promise<void> {
   
   updateUI();
 
+  // Create assistant message placeholder
+  const assistantMessageId = generateId();
+  const assistantMessage: Message = {
+    id: assistantMessageId,
+    role: 'assistant',
+    content: '',
+    timestamp: new Date()
+  };
+
+  state.messages.push(assistantMessage);
+
   try {
     state.isLoading = true;
     updateUI();
 
-    // TODO: Call chat service
-    const response = await sendMessageToAPI(content);
-    
-    const assistantMessage: Message = {
-      id: generateId(),
-      role: 'assistant',
-      content: response,
-      timestamp: new Date()
-    };
+    const messages: ChatMessage[] = state.messages
+      .filter(msg => msg.id !== assistantMessageId || msg.content !== '')
+      .map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
 
-    state.messages.push(assistantMessage);
+    messages.push({
+      role: 'user',
+      content
+    });
+
+    // Stream the response
+    let fullContent = '';
+    const messageElement = document.querySelector(`[data-message-id="${assistantMessageId}"]`);
+    
+    if (messageElement) {
+      const contentWrapper = messageElement.querySelector('.message-content');
+      
+      if (contentWrapper) {
+        contentWrapper.classList.add('streaming');
+      }
+      
+      for await (const chunk of chatService.streamMessage(messages)) {
+        fullContent += chunk;
+        assistantMessage.content = fullContent;
+        
+        if (contentWrapper) {
+          // Update content smoothly without jumping
+          const scrollContainer = document.getElementById('chat-messages');
+          const wasAtBottom = scrollContainer ? 
+            Math.abs(scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight) < 50 : 
+            false;
+          
+          contentWrapper.innerHTML = formatContent(fullContent);
+          
+          // Only scroll if user was already at bottom
+          if (wasAtBottom && scrollContainer) {
+            requestAnimationFrame(() => {
+              scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            });
+          }
+        }
+      }
+      
+      if (contentWrapper) {
+        contentWrapper.classList.remove('streaming');
+      }
+    }
   } catch (error) {
     console.error('Failed to send message:', error);
     state.error = error instanceof Error ? error.message : 'Failed to send message';
+    
+    // Remove the failed assistant message
+    const index = state.messages.findIndex(msg => msg.id === assistantMessageId);
+    if (index !== -1) {
+      state.messages.splice(index, 1);
+    }
   } finally {
     state.isLoading = false;
     updateUI();
   }
 }
 
-async function sendMessageToAPI(message: string): Promise<string> {
-  const messages: ChatMessage[] = state.messages.map(msg => ({
-    role: msg.role,
-    content: msg.content
-  }));
-
-  messages.push({
-    role: 'user',
-    content: message
-  });
-
-  return await chatService.sendMessage(messages);
+function formatContent(content: string): string {
+  let formatted = escapeHtml(content);
+  
+  // Convert code blocks (```...```)
+  formatted = formatted.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+  
+  // Convert inline code (`...`)
+  formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+  
+  // Convert bold (**...**)
+  formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  
+  // Convert italic (*...*)
+  formatted = formatted.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  
+  // Convert newlines to <br>
+  formatted = formatted.replace(/\n/g, '<br>');
+  
+  return formatted;
 }
 
 function updateUI(): void {
