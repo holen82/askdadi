@@ -81,6 +81,41 @@ env:
 - Verify secret name matches exactly (case-sensitive)
 - Check secret is set at repository level (not environment)
 
+### Backend: "Authentication failed" or 401 Unauthorized
+
+**Symptoms**: Deployment fails with "Failed to fetch Kudu App Settings. Unauthorized (CODE: 401)"
+
+**Common Causes:**
+1. Publish profile is from wrong Function App
+2. Publish profile is expired or regenerated
+3. Function App name in workflow doesn't match Azure resource
+4. Copied incomplete XML from publish profile
+
+**Solutions:**
+
+1. **Download fresh publish profile**:
+   - Go to Azure Portal → Your Function App
+   - Click **Get publish profile** (top menu)
+   - Open the `.PublishSettings` file
+   - Copy **entire XML content** (including `<?xml` line)
+
+2. **Update GitHub secret**:
+   - GitHub → Settings → Secrets → Actions
+   - Click **Update** on `AZURE_FUNCTIONAPP_PUBLISH_PROFILE`
+   - Paste complete XML
+   - Save
+
+3. **Verify Function App name matches**:
+   - In workflow: `AZURE_FUNCTIONAPP_NAME: 'fa-dadi'`
+   - Should match Azure Portal resource name exactly
+   - Should match `publishUrl` in publish profile
+
+4. **Re-trigger deployment**
+
+See detailed guide: [backend-deployment-401-fix.md](backend-deployment-401-fix.md)
+
+---
+
 ### Backend: "Authentication failed"
 - Re-download fresh publish profile from Azure
 - Ensure no extra whitespace when pasting
