@@ -10,6 +10,7 @@ import './styles/message.css';
 import { initAuthGuard } from '@/utils/authGuard';
 import { renderHeader, initHeader } from '@/components/Header';
 import { renderChat, initChat } from '@/components/Chat';
+import { initDebugMode } from '@/utils/debugMode';
 import type { User } from '@/types/auth';
 
 // Initialize the authenticated application
@@ -36,6 +37,9 @@ function initAuthenticatedApp(user: User): void {
 
 // Initialize the application
 async function initApp(): Promise<void> {
+  // Initialize debug mode first to capture all errors
+  initDebugMode();
+  
   await initAuthGuard(initAuthenticatedApp);
 }
 
