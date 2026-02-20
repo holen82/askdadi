@@ -143,19 +143,27 @@ az storage blob upload-batch \
 
 Add these secrets to your GitHub repository (Settings → Secrets → Actions):
 
-- `AZURE_STORAGE_ACCOUNT_NAME`: Your storage account name
-- `AZURE_STORAGE_ACCOUNT_KEY`: Access key from storage account (Settings → Access keys)
+**For Backend:**
+- `AZURE_FUNCTIONAPP_PUBLISH_PROFILE`: Publish profile from Function App
+
+**For Frontend (choose one method):**
+- `AZURE_STORAGE_ACCOUNT_KEY`: Access key from Storage account (recommended for simplicity)
 
 Or use Service Principal:
 - `AZURE_CREDENTIALS`: JSON with service principal credentials
 
-```json
-{
-  "clientId": "<client-id>",
-  "clientSecret": "<client-secret>",
-  "subscriptionId": "<subscription-id>",
-  "tenantId": "<tenant-id>"
-}
+**Get Storage Account Key:**
+```bash
+# Using Azure Portal
+# 1. Go to Storage Account → Access keys
+# 2. Show and copy key1 or key2
+
+# Using Azure CLI
+az storage account keys list \
+  --resource-group <resource-group> \
+  --account-name <storage-account> \
+  --query '[0].value' \
+  --output tsv
 ```
 
 ## Testing

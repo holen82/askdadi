@@ -43,22 +43,14 @@ jobs:
         VITE_FUNCTION_APP_URL: ${{ env.FUNCTION_APP_URL }}
       run: npm run build
     
-    - name: Azure Login
-      uses: azure/login@v2
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-    
     - name: Deploy to Azure Storage
       uses: azure/CLI@v2
       with:
+        azcliversion: latest
         inlineScript: |
           az storage blob upload-batch \
             --source ./frontend/dist \
             --destination '$web' \
             --account-name ${{ env.STORAGE_ACCOUNT_NAME }} \
-            --overwrite \
-            --auth-mode login
-    
-    - name: Logout
-      run: az logout
-      if: always()
+            --account-key ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }} \
+            --overwrite
