@@ -1,0 +1,56 @@
+name: Deploy C# Backend to Azure Function App (Flex Consumption)
+
+on:
+  push:
+    branches:
+      - master
+      - main
+    paths:
+      - 'backend-csharp/**'
+      - '.github/workflows/backend-deploy.yml'
+  workflow_dispatch:
+
+env:
+  AZURE_FUNCTIONAPP_NAME: 'fa-dadi'
+  AZURE_RESOURCE_GROUP: 'rg-dadi'
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'backend-csharp'
+  DOTNET_VERSION: '8.0.x'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@v4
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: 'Build Project'
+      shell: bash
+      run: |
+        cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+        dotnet build --configuration Release
+
+    - name: 'Azure Login'
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: 'Deploy to Azure Functions with Remote Build'
+      shell: bash
+      run: |
+        cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+        zip -r deploy.zip . -x "obj/*" -x "bin/*" -x ".git/*" -x ".vs/*"
+        az functionapp deployment source config-zip \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+          --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
+          --src deploy.zip \
+          --build-remote true
+    
+    - name: 'Azure Logout'
+      run: az logout
+      if: always()
