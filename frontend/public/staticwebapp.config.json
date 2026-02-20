@@ -1,1 +1,34 @@
-{"routes":[{"route":"/login","rewrite":"/.auth/login/google?post_login_redirect_uri=/"}],"navigationFallback":{"rewrite":"/index.html","exclude":["/api/*","/.auth/*","/assets/*"]},"responseOverrides":{"401":{"redirect":"/.auth/login/google?post_login_redirect_uri=/","statusCode":302}},"auth":{"rolesSource":"DEFAULT","identityProviders":{"google":{"registration":{"clientIdSettingName":"GOOGLE_CLIENT_ID","clientSecretSettingName":"GOOGLE_CLIENT_SECRET_APP_SETTING_NAME"}}}}}
+{
+  "routes": [
+    {
+      "route": "/login",
+      "rewrite": "/.auth/login/google?post_login_redirect_uri=/"
+    }
+  ],
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/api/*",
+      "/.auth/login/*",
+      "/.auth/logout",
+      "/assets/*"
+    ]
+  },
+  "responseOverrides": {
+    "401": {
+      "redirect": "/.auth/login/google?post_login_redirect_uri=/",
+      "statusCode": 302
+    }
+  },
+  "auth": {
+    "rolesSource": "DEFAULT",
+    "identityProviders": {
+      "google": {
+        "registration": {
+          "clientIdSettingName": "GOOGLE_CLIENT_ID",
+          "clientSecretSettingName": "GOOGLE_CLIENT_SECRET_APP_SETTING_NAME"
+        }
+      }
+    }
+  }
+}
