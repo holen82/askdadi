@@ -11,14 +11,14 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_NAME: 'your-function-app-name'  # Replace with your Function App name
+  AZURE_FUNCTIONAPP_NAME: 'fa-dadi'
   AZURE_FUNCTIONAPP_PACKAGE_PATH: 'backend-csharp'
   DOTNET_VERSION: '8.0.x'
 
 jobs:
   build-and-deploy:
     runs-on: windows-latest
-    
+
     steps:
     - name: 'Checkout GitHub Action'
       uses: actions/checkout@v4

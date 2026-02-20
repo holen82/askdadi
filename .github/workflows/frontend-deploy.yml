@@ -11,38 +11,38 @@ on:
   workflow_dispatch:
 
 env:
-  STORAGE_ACCOUNT_NAME: 'your-storage-account'  # Replace with your storage account name
-  FUNCTION_APP_URL: 'https://your-function-app.azurewebsites.net'  # Replace with your Function App URL
+  STORAGE_ACCOUNT_NAME: 'dadi'  # Replace with your storage account name
+  FUNCTION_APP_URL: 'https://fa-dadi.azurewebsites.net'  # Replace with your Function App URL
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
-    
+
     - name: Install dependencies
       working-directory: ./frontend
       run: npm ci
-    
+
     - name: Type check
       working-directory: ./frontend
       run: npm run type-check
-    
+
     - name: Build
       working-directory: ./frontend
       env:
         VITE_FUNCTION_APP_URL: ${{ env.FUNCTION_APP_URL }}
       run: npm run build
-    
+
     - name: Deploy to Azure Storage
       uses: azure/CLI@v2
       with:
