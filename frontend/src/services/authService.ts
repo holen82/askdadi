@@ -48,5 +48,6 @@ export function logout(): void {
  * Redirect to login page
  */
 export function redirectToLogin(): void {
-  window.location.href = '/.auth/login/google';
+  // Use post_login_redirect_uri to redirect back to app after successful login
+  window.location.href = '/.auth/login/google?post_login_redirect_uri=/';
 }
