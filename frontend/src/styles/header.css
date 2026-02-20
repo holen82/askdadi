@@ -5,7 +5,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px 24px;
-  background: white;
+  background: rgba(31, 41, 55, 0.5);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--color-border);
   height: 64px;
 }
@@ -25,12 +26,12 @@
 
 .user-email {
   font-size: 14px;
-  color: #6b7280;
+  color: #9ca3af;
 }
 
 .logout-button {
   padding: 8px 16px;
-  background: white;
+  background: rgba(55, 65, 81, 0.5);
   border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 14px;
@@ -41,12 +42,12 @@
 }
 
 .logout-button:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
+  background: rgba(75, 85, 99, 0.7);
+  border-color: #4b5563;
 }
 
 .logout-button:active {
-  background: #f3f4f6;
+  background: rgba(55, 65, 81, 0.9);
 }
 
 /* Mobile responsive */

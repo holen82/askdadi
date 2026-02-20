@@ -2,7 +2,7 @@ import type { Message } from '@/types/chat';
 
 export function renderMessage(message: Message): string {
   const isUser = message.role === 'user';
-  const avatarText = isUser ? 'U' : 'AI';
+  const avatarText = isUser ? 'Du' : 'AI';
   const formattedTime = formatTimestamp(message.timestamp);
   const formattedContent = formatContent(message.content);
 
@@ -11,7 +11,6 @@ export function renderMessage(message: Message): string {
       <div class="message-avatar">${avatarText}</div>
       <div class="message-content-wrapper">
         <div class="message-content">${formattedContent}</div>
-        <div class="message-timestamp">${formattedTime}</div>
       </div>
     </div>
   `;
