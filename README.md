@@ -136,19 +136,6 @@ VITE_FUNCTION_APP_URL=http://localhost:7071
 - HTTPS enforced by Azure
 - CORS configured for specific origins
 
-## Cost Estimate
-
-For 3 users with moderate usage:
-- Azure Storage: ~$1-5/month (static website hosting)
-- Function App: Consumption plan ~$0-20/month
-- Azure OpenAI: Variable (~$0.001-0.06 per 1K tokens)
-- Application Insights: First 5 GB/month free
-
-**Estimated: $15-40/month**
-
-## Migration from SWA
-
-This project was migrated from Azure Static Web Apps to Azure Storage + Function App architecture. See migration notes in [docs/swa-migration.md](docs/swa-migration.md).
 
 ## License
 
