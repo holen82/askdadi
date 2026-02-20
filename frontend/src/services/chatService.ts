@@ -12,11 +12,17 @@ export interface ChatResponse {
   error?: string;
 }
 
+export interface ChatError {
+  error: string;
+  message: string;
+}
+
 class ChatService {
   private apiBaseUrl: string;
 
   constructor() {
-    this.apiBaseUrl = '/api';
+    const config = import.meta.env.VITE_FUNCTION_APP_URL || 'http://localhost:7071';
+    this.apiBaseUrl = config;
   }
 
   async sendMessage(messages: ChatMessage[]): Promise<string> {
@@ -26,12 +32,24 @@ class ChatService {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ messages } as ChatRequest),
       });
 
+      if (response.status === 401) {
+        throw new Error('Unauthorized. Please log in again.');
+      }
+
+      if (response.status === 403) {
+        throw new Error('You are not authorized to use this application.');
+      }
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Request failed with status ${response.status}`);
+        const errorData: ChatError = await response.json().catch(() => ({
+          error: 'Unknown Error',
+          message: `Request failed with status ${response.status}`
+        }));
+        throw new Error(errorData.message || errorData.error);
       }
 
       const data: ChatResponse = await response.json();

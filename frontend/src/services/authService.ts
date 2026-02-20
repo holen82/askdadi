@@ -4,14 +4,14 @@
 
 import type { User, AuthError } from '@/types/auth';
 
-const API_BASE_URL = '/api';
-
 /**
  * Get current user information from backend
  */
 export async function getUserInfo(): Promise<User | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/user`, {
+    const apiBaseUrl = import.meta.env.VITE_FUNCTION_APP_URL || 'http://localhost:7071';
+    
+    const response = await fetch(`${apiBaseUrl}/user`, {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -24,7 +24,10 @@ export async function getUserInfo(): Promise<User | null> {
     }
 
     if (!response.ok) {
-      const error: AuthError = await response.json();
+      const error: AuthError = await response.json().catch(() => ({
+        error: 'Unknown Error',
+        message: 'Failed to get user information'
+      }));
       console.error('Failed to get user info:', error);
       return null;
     }
@@ -39,15 +42,19 @@ export async function getUserInfo(): Promise<User | null> {
 
 /**
  * Logout current user
+ * Redirects to Function App's Easy Auth logout endpoint
  */
 export function logout(): void {
-  window.location.href = '/.auth/logout';
+  const functionAppUrl = import.meta.env.VITE_FUNCTION_APP_URL || 'http://localhost:7071';
+  window.location.href = `${functionAppUrl}/.auth/logout?post_logout_redirect_uri=${encodeURIComponent(window.location.origin)}`;
 }
 
 /**
  * Redirect to login page
+ * Uses Function App's Easy Auth login endpoint for Google
  */
 export function redirectToLogin(): void {
-  // Use post_login_redirect_uri to redirect back to app after successful login
-  window.location.href = '/.auth/login/google?post_login_redirect_uri=/';
+  const functionAppUrl = import.meta.env.VITE_FUNCTION_APP_URL || 'http://localhost:7071';
+  const redirectUri = encodeURIComponent(window.location.origin);
+  window.location.href = `${functionAppUrl}/.auth/login/google?post_login_redirect_uri=${redirectUri}`;
 }

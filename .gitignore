@@ -22,6 +22,18 @@ local.settings.json
 *.publish.xml
 *.PublishSettings
 
+# .NET / C#
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+.vs/
+__azurite*
+__blobstorage__
+__queuestorage__
+__azurite_db*__.json
+
 # IDEs
 .vscode/
 .idea/
