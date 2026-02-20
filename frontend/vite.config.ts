@@ -31,7 +31,8 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       // Expose env variables to the client
-      'import.meta.env.VITE_FUNCTION_APP_URL': JSON.stringify(env.VITE_FUNCTION_APP_URL || 'http://localhost:7071')
+      // Prioritize actual environment variable over .env file
+      'import.meta.env.VITE_FUNCTION_APP_URL': JSON.stringify(process.env.VITE_FUNCTION_APP_URL || env.VITE_FUNCTION_APP_URL || 'http://localhost:7071')
     }
   };
 });
