@@ -21,12 +21,20 @@
     }
   },
   "auth": {
-    "rolesSource": "DEFAULT",
     "identityProviders": {
-      "google": {
-        "registration": {
-          "clientIdSettingName": "GOOGLE_CLIENT_ID",
-          "clientSecretSettingName": "GOOGLE_CLIENT_SECRET_APP_SETTING_NAME"
+      "customOpenIdConnectProviders": {
+        "google": {
+          "registration": {
+            "clientIdSettingName": "GOOGLE_CLIENT_ID",
+            "clientSecretSettingName": "GOOGLE_CLIENT_SECRET_APP_SETTING_NAME",
+            "openIdConnectConfiguration": {
+              "wellKnownOpenIdConfiguration": "https://accounts.google.com/.well-known/openid-configuration"
+            }
+          },
+          "login": {
+            "nameClaimType": "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name",
+            "scopes": ["openid", "profile", "email"]
+          }
         }
       }
     }
