@@ -248,7 +248,8 @@ class DebugOverlay {
     
     window.fetch = async (...args: Parameters<typeof fetch>): Promise<Response> => {
       const startTime = Date.now();
-      const url = typeof args[0] === 'string' ? args[0] : args[0].url;
+      const input = args[0];
+      const url = typeof input === 'string' ? input : (input instanceof Request ? input.url : String(input));
       
       try {
         const response = await originalFetch(...args);
@@ -287,7 +288,7 @@ class DebugOverlay {
       return originalOpen.apply(this, [method, url, ...args] as any);
     };
 
-    XMLHttpRequest.prototype.send = function(...args: any[]) {
+    XMLHttpRequest.prototype.send = function(body?: Document | XMLHttpRequestBodyInit | null) {
       this.addEventListener('load', function() {
         const duration = Date.now() - (this as any)._debugStartTime;
         if (this.status >= 400) {
@@ -310,7 +311,7 @@ class DebugOverlay {
         });
       });
 
-      return originalSend.apply(this, args);
+      return originalSend.call(this, body);
     };
   }
 
