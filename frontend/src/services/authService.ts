@@ -1,5 +1,5 @@
 import type { User, AuthError } from '@/types/auth';
-import { getApiBaseUrl } from '@/utils/environment';
+import { getApiBaseUrl, getFrontendUrl } from '@/utils/environment';
 
 /**
  * Get current user information from backend
@@ -43,7 +43,8 @@ export async function getUserInfo(): Promise<User | null> {
  */
 export function logout(): void {
   const functionAppUrl = getApiBaseUrl();
-  window.location.href = `${functionAppUrl}/.auth/logout?post_logout_redirect_uri=${encodeURIComponent(window.location.origin)}`;
+  const frontendUrl = getFrontendUrl();
+  window.location.href = `${functionAppUrl}/.auth/logout?post_logout_redirect_uri=${encodeURIComponent(frontendUrl)}`;
 }
 
 /**
@@ -52,6 +53,7 @@ export function logout(): void {
  */
 export function redirectToLogin(): void {
   const functionAppUrl = getApiBaseUrl();
-  const redirectUri = encodeURIComponent(window.location.origin);
+  const frontendUrl = getFrontendUrl();
+  const redirectUri = encodeURIComponent(frontendUrl);
   window.location.href = `${functionAppUrl}/.auth/login/google?post_login_redirect_uri=${redirectUri}`;
 }
