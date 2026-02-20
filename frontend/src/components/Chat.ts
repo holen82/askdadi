@@ -51,6 +51,33 @@ function renderMessages(): string {
   return state.messages.map(message => renderMessage(message)).join('');
 }
 
+function updateMessagesContainer(container: HTMLElement): void {
+  if (state.messages.length === 0) {
+    container.innerHTML = renderMessages();
+    return;
+  }
+
+  // Remove empty state if it exists
+  const emptyState = container.querySelector('.chat-empty-state');
+  if (emptyState) {
+    emptyState.remove();
+  }
+
+  // Get existing message IDs
+  const existingIds = new Set(
+    Array.from(container.querySelectorAll('[data-message-id]'))
+      .map(el => el.getAttribute('data-message-id'))
+  );
+
+  // Only append new messages
+  state.messages.forEach(message => {
+    if (!existingIds.has(message.id)) {
+      const messageHtml = renderMessage(message);
+      container.insertAdjacentHTML('beforeend', messageHtml);
+    }
+  });
+}
+
 export function initChat(): void {
   const sendButton = document.getElementById('chat-send-button');
   const input = document.getElementById('chat-input') as HTMLTextAreaElement;
@@ -142,7 +169,7 @@ function updateUI(): void {
   const inputContainer = document.querySelector('.chat-input-container');
   
   if (messagesContainer) {
-    messagesContainer.innerHTML = renderMessages();
+    updateMessagesContainer(messagesContainer);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
 
