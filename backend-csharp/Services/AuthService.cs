@@ -76,6 +76,25 @@ public class AuthService
 
         try
         {
+            // First, try to extract email from Claims array
+            if (user.Claims != null && user.Claims.Length > 0)
+            {
+                _logger.LogInformation("Searching through {Count} claims for email", user.Claims.Length);
+                
+                // Look for the standard email claim type
+                var emailClaim = user.Claims.FirstOrDefault(c => 
+                    c.Typ == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" ||
+                    c.Typ == "email" ||
+                    c.Typ.EndsWith("/emailaddress", StringComparison.OrdinalIgnoreCase));
+                
+                if (emailClaim != null && !string.IsNullOrEmpty(emailClaim.Val))
+                {
+                    _logger.LogInformation("Email found in claims: {Email}", emailClaim.Val);
+                    return emailClaim.Val;
+                }
+            }
+            
+            // Fallback: try UserDetails JSON
             if (!string.IsNullOrEmpty(user.UserDetails))
             {
                 var claims = JsonSerializer.Deserialize<UserClaims>(user.UserDetails, new JsonSerializerOptions
@@ -85,16 +104,52 @@ public class AuthService
                 
                 if (!string.IsNullOrEmpty(claims?.Email))
                 {
+                    _logger.LogInformation("Email found in UserDetails: {Email}", claims.Email);
                     return claims.Email;
                 }
             }
 
+            // Last resort: use UserId
+            _logger.LogWarning("No email found in claims or UserDetails, using UserId: {UserId}", user.UserId);
             return user.UserId;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to extract email from user details");
+            _logger.LogError(ex, "Failed to extract email from user");
             return user.UserId;
+        }
+    }
+
+    public string? GetUserName(User? user)
+    {
+        if (user == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            // Try to extract name from Claims array
+            if (user.Claims != null && user.Claims.Length > 0)
+            {
+                var nameClaim = user.Claims.FirstOrDefault(c => 
+                    c.Typ == "name" ||
+                    c.Typ == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name" ||
+                    c.Typ.EndsWith("/name", StringComparison.OrdinalIgnoreCase));
+                
+                if (nameClaim != null && !string.IsNullOrEmpty(nameClaim.Val))
+                {
+                    _logger.LogInformation("Name found in claims: {Name}", nameClaim.Val);
+                    return nameClaim.Val;
+                }
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to extract name from user");
+            return null;
         }
     }
 

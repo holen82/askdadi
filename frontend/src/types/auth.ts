@@ -4,6 +4,7 @@
 
 export interface User {
   email: string;
+  name?: string;
   userId: string;
   provider: string;
   isAuthenticated: boolean;

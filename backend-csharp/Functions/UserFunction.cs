@@ -53,9 +53,12 @@ public class UserFunction
 
         _logger.LogInformation("User authenticated successfully: {Email}", email);
 
+        var name = _authService.GetUserName(user);
+
         return new OkObjectResult(new UserInfoResponse
         {
             Email = email ?? string.Empty,
+            Name = name,
             Provider = user.IdentityProvider,
             UserId = user.UserId,
             IsAuthenticated = true
