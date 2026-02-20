@@ -1,15 +1,12 @@
-/**
- * Authentication service for handling user login, logout, and validation
- */
-
 import type { User, AuthError } from '@/types/auth';
+import { getApiBaseUrl } from '@/utils/environment';
 
 /**
  * Get current user information from backend
  */
 export async function getUserInfo(): Promise<User | null> {
   try {
-    const apiBaseUrl = import.meta.env.VITE_FUNCTION_APP_URL || 'http://localhost:7071';
+    const apiBaseUrl = getApiBaseUrl();
     
     const response = await fetch(`${apiBaseUrl}/user`, {
       method: 'GET',
@@ -45,7 +42,7 @@ export async function getUserInfo(): Promise<User | null> {
  * Redirects to Function App's Easy Auth logout endpoint
  */
 export function logout(): void {
-  const functionAppUrl = import.meta.env.VITE_FUNCTION_APP_URL || 'http://localhost:7071';
+  const functionAppUrl = getApiBaseUrl();
   window.location.href = `${functionAppUrl}/.auth/logout?post_logout_redirect_uri=${encodeURIComponent(window.location.origin)}`;
 }
 
@@ -54,7 +51,7 @@ export function logout(): void {
  * Uses Function App's Easy Auth login endpoint for Google
  */
 export function redirectToLogin(): void {
-  const functionAppUrl = import.meta.env.VITE_FUNCTION_APP_URL || 'http://localhost:7071';
+  const functionAppUrl = getApiBaseUrl();
   const redirectUri = encodeURIComponent(window.location.origin);
   window.location.href = `${functionAppUrl}/.auth/login/google?post_login_redirect_uri=${redirectUri}`;
 }

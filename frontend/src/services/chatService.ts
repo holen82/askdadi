@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from '@/utils/environment';
+
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -21,8 +23,7 @@ class ChatService {
   private apiBaseUrl: string;
 
   constructor() {
-    const config = import.meta.env.VITE_FUNCTION_APP_URL || 'http://localhost:7071';
-    this.apiBaseUrl = config;
+    this.apiBaseUrl = getApiBaseUrl();
   }
 
   async sendMessage(messages: ChatMessage[]): Promise<string> {

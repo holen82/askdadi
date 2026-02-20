@@ -8,10 +8,20 @@ export interface EnvironmentConfig {
 }
 
 /**
+ * Get the API base URL
+ * In production (when VITE_FUNCTION_APP_URL is empty), uses the current origin
+ * In development, uses localhost:7071 or the specified URL
+ */
+export function getApiBaseUrl(): string {
+  const envUrl = import.meta.env.VITE_FUNCTION_APP_URL;
+  return envUrl || window.location.origin;
+}
+
+/**
  * Get environment configuration
  */
 export function getEnvironmentConfig(): EnvironmentConfig {
-  const functionAppUrl = import.meta.env.VITE_FUNCTION_APP_URL || 'http://localhost:7071';
+  const functionAppUrl = getApiBaseUrl();
   const mode = import.meta.env.MODE || 'development';
 
   return {
