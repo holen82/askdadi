@@ -1,82 +1,99 @@
 # GitHub Secrets Configuration
 
-This document lists all required GitHub secrets for CI/CD workflows.
+This guide explains the GitHub secrets needed for CI/CD deployment.
 
 ## Required Secrets
 
-Navigate to your GitHub repository > **Settings** > **Secrets and variables** > **Actions** to add these secrets.
+### For Backend Deployment
 
-### 1. AZURE_STATIC_WEB_APPS_API_TOKEN
+**`AZURE_FUNCTIONAPP_PUBLISH_PROFILE`**
+- Description: Publish profile for Azure Function App
+- How to get:
+  1. Go to Azure Portal → Your Function App
+  2. Click **Get publish profile** in top menu
+  3. Open downloaded file and copy entire contents
+  4. Paste into GitHub secret
 
-**Description**: Deployment token for Azure Static Web Apps
+### For Frontend Deployment
 
-**How to get it**:
-1. Go to your Azure Static Web App in Azure Portal
-2. Navigate to **Settings** > **Configuration**
-3. Click **Manage deployment token**
-4. Copy the token value
+**`AZURE_STORAGE_ACCOUNT_KEY`**
+- Description: Access key for Storage account (simpler method)
+- How to get:
+  1. Go to Azure Portal → Your Storage Account
+  2. Navigate to **Security + networking** → **Access keys**
+  3. Click **Show** next to key1 or key2
+  4. Copy the **Key** value
+  5. Add as GitHub secret
 
-**Used by**: `.github/workflows/frontend-deploy.yml`
+Or using Azure CLI:
+```bash
+az storage account keys list \
+  --resource-group <resource-group> \
+  --account-name <storage-account> \
+  --query '[0].value' \
+  --output tsv
+```
 
-### 2. AZURE_FUNCTION_APP_NAME
+## Adding Secrets to GitHub
 
-**Description**: Name of your Azure Function App
+1. Go to your GitHub repository
+2. Navigate to **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret**
+4. Add each secret:
+   - Name: (e.g., `AZURE_FUNCTIONAPP_PUBLISH_PROFILE`)
+   - Secret: Paste the value
+5. Click **Add secret**
 
-**Value**: The name you gave your Function App (e.g., `func-ai-chatbot`)
+## Workflow Configuration
 
-**How to get it**:
-- It's the name visible in Azure Portal under your Function App resource
+Update the workflow files with your actual resource names:
 
-**Used by**: `.github/workflows/backend-deploy.yml`
+### `.github/workflows/backend-deploy.yml`
+```yaml
+env:
+  AZURE_FUNCTIONAPP_NAME: 'your-function-app-name'  # Change this
+```
 
-### 3. AZURE_FUNCTION_APP_PUBLISH_PROFILE
+### `.github/workflows/frontend-deploy.yml`
+```yaml
+env:
+  STORAGE_ACCOUNT_NAME: 'your-storage-account'      # Change this
+  FUNCTION_APP_URL: 'https://your-function-app.azurewebsites.net'  # Change this
+```
 
-**Description**: Publish profile credentials for Azure Function App deployment
+## Testing Workflows
 
-**How to get it**:
-1. Go to your Azure Function App in Azure Portal
-2. Click **Overview** > **Get publish profile** (in the top menu)
-3. Save the downloaded `.PublishSettings` file
-4. Open the file and copy its entire XML content
-5. Paste the XML content as the secret value
+### Trigger manually:
+1. Go to **Actions** tab in GitHub
+2. Select workflow (Backend or Frontend deploy)
+3. Click **Run workflow**
+4. Select branch (usually `master`)
+5. Click **Run workflow**
 
-**Used by**: `.github/workflows/backend-deploy.yml`
+### Trigger by push:
+- Push changes to `master` branch
+- Changes in `backend-csharp/**` trigger backend deploy
+- Changes in `frontend/**` trigger frontend deploy
 
-## Verification Checklist
+## Troubleshooting
 
-After adding secrets, verify:
+### Workflow fails with "Secret not found"
+- Verify secret name matches exactly (case-sensitive)
+- Check secret is set at repository level (not environment)
 
-- [ ] `AZURE_STATIC_WEB_APPS_API_TOKEN` added and value is not empty
-- [ ] `AZURE_FUNCTION_APP_NAME` added with correct Function App name
-- [ ] `AZURE_FUNCTION_APP_PUBLISH_PROFILE` added with complete XML content
-- [ ] Secrets are marked as "Secrets" (not "Variables") in GitHub
-- [ ] No extra whitespace or newlines in secret values
+### Backend: "Authentication failed"
+- Re-download fresh publish profile from Azure
+- Ensure no extra whitespace when pasting
+- Check Function App name in workflow matches reality
 
-## Testing the Secrets
-
-To test if secrets are configured correctly:
-
-1. Make a small change to a file in `frontend/` folder
-2. Commit and push to `main` branch
-3. Go to **Actions** tab in GitHub
-4. Check if "Deploy Frontend to Azure Static Web Apps" workflow runs successfully
-5. Repeat for backend by changing a file in `backend/` folder
+### Frontend: "Storage authentication failed"
+- Verify storage account key is correct
+- Check storage account name in workflow matches reality
+- Regenerate storage key if needed
 
 ## Security Notes
 
 - Never commit secrets to the repository
-- Never share secret values in issues or pull requests
-- Rotate secrets if they're accidentally exposed
-- Use separate secrets for production and staging environments (if applicable)
-- GitHub secrets are encrypted and only exposed to workflow runs
-
-## Troubleshooting
-
-**Error: "Secret AZURE_STATIC_WEB_APPS_API_TOKEN is not set"**
-- Solution: Verify the secret name is exactly as shown (case-sensitive)
-
-**Error: "Authentication failed" during Function App deployment**
-- Solution: Re-download and update the publish profile secret
-
-**Error: "Resource not found"**
-- Solution: Verify AZURE_FUNCTION_APP_NAME matches exactly with Azure resource name
+- Secrets are encrypted by GitHub
+- Rotate secrets if accidentally exposed
+- Use separate secrets for different environments
