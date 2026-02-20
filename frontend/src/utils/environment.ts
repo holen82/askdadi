@@ -9,8 +9,6 @@ export interface EnvironmentConfig {
 
 /**
  * Get the API base URL
- * In production (when VITE_FUNCTION_APP_URL is empty), uses the current origin
- * In development, uses localhost:7071 or the specified URL
  */
 export function getApiBaseUrl(): string {
   const envUrl = import.meta.env.VITE_FUNCTION_APP_URL;

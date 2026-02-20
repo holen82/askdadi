@@ -40,7 +40,7 @@ jobs:
     - name: Build
       working-directory: ./frontend
       env:
-        VITE_FUNCTION_APP_URL: ''
+        VITE_FUNCTION_APP_URL: 'https://fa-dadi.azurewebsites.net'
       run: npm run build
 
     - name: Deploy to Azure Storage
