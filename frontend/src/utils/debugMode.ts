@@ -18,15 +18,33 @@ class DebugOverlay {
   private isMinimized = false;
 
   constructor() {
-    this.checkUrlParam();
+    this.checkDebugMode();
     if (this.isEnabled) {
       this.init();
     }
   }
 
-  private checkUrlParam(): void {
+  private checkDebugMode(): void {
+    const STORAGE_KEY = 'debugModeEnabled';
     const params = new URLSearchParams(window.location.search);
-    this.isEnabled = params.get('debug') === 'true';
+    const debugParam = params.get('debug');
+
+    // URL parameter takes precedence
+    if (debugParam === 'true') {
+      this.isEnabled = true;
+      sessionStorage.setItem(STORAGE_KEY, 'true');
+      console.log('🐛 Debug mode enabled via URL parameter');
+    } else if (debugParam === 'false') {
+      this.isEnabled = false;
+      sessionStorage.removeItem(STORAGE_KEY);
+      console.log('🐛 Debug mode disabled via URL parameter');
+    } else {
+      // Check sessionStorage if no URL parameter
+      this.isEnabled = sessionStorage.getItem(STORAGE_KEY) === 'true';
+      if (this.isEnabled) {
+        console.log('🐛 Debug mode restored from session');
+      }
+    }
   }
 
   private init(): void {
