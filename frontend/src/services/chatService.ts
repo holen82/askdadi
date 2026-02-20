@@ -28,12 +28,14 @@ class ChatService {
 
   async sendMessage(messages: ChatMessage[]): Promise<string> {
     try {
+      const bypassAuth = import.meta.env.VITE_BYPASS_AUTH_FOR_LOCAL_DEV === 'true';
+      
       const response = await fetch(`${this.apiBaseUrl}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        credentials: bypassAuth ? 'omit' : 'include',
         body: JSON.stringify({ messages } as ChatRequest),
       });
 

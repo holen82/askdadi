@@ -9,7 +9,7 @@ var host = new HostBuilder()
     {
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
-        
+
         // Register application services
         services.AddSingleton<AuthService>();
         services.AddSingleton<OpenAIService>();

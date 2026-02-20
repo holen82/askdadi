@@ -6,6 +6,19 @@ import { getApiBaseUrl, getFrontendUrl } from '@/utils/environment';
  */
 export async function getUserInfo(): Promise<User | null> {
   try {
+    // Check if we should bypass auth for local development
+    const bypassAuth = import.meta.env.VITE_BYPASS_AUTH_FOR_LOCAL_DEV;
+    if (bypassAuth === 'true') {
+      console.log('VITE_BYPASS_AUTH_FOR_LOCAL_DEV enabled - using fake user');
+      return {
+        email: 'dev@local.test',
+        name: 'Local Dev User',
+        provider: 'local',
+        userId: 'local-dev-user',
+        isAuthenticated: true
+      };
+    }
+
     const apiBaseUrl = getApiBaseUrl();
     
     const response = await fetch(`${apiBaseUrl}/user`, {

@@ -36,6 +36,24 @@ public class AuthService
         if (!request.Headers.TryGetValue("x-ms-client-principal", out var userHeader))
         {
             _logger.LogDebug("x-ms-client-principal header not found");
+            
+            var bypassAuth = Environment.GetEnvironmentVariable("BYPASS_AUTH_FOR_LOCAL_DEV");
+            if (!string.IsNullOrEmpty(bypassAuth) && bypassAuth.Equals("true", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation("BYPASS_AUTH_FOR_LOCAL_DEV enabled - returning fake user");
+                return new User
+                {
+                    UserId = "local-dev-user",
+                    IdentityProvider = "local",
+                    UserDetails = "{\"email\":\"dev@local.test\",\"name\":\"Local Dev User\"}",
+                    Claims = new[]
+                    {
+                        new UserClaim { Typ = "email", Val = "dev@local.test" },
+                        new UserClaim { Typ = "name", Val = "Local Dev User" }
+                    }
+                };
+            }
+            
             return null;
         }
 
@@ -158,6 +176,13 @@ public class AuthService
         if (string.IsNullOrEmpty(email))
         {
             return false;
+        }
+
+        var bypassAuth = Environment.GetEnvironmentVariable("BYPASS_AUTH_FOR_LOCAL_DEV");
+        if (!string.IsNullOrEmpty(bypassAuth) && bypassAuth.Equals("true", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogInformation("BYPASS_AUTH_FOR_LOCAL_DEV enabled - allowing access for {Email}", email);
+            return true;
         }
 
         if (_whitelistedEmails.Length == 0)
