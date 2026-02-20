@@ -55,5 +55,7 @@ export function redirectToLogin(): void {
   const functionAppUrl = getApiBaseUrl();
   const frontendUrl = getFrontendUrl();
   const redirectUri = encodeURIComponent(frontendUrl);
-  window.location.href = `${functionAppUrl}/.auth/login/google?post_login_redirect_uri=${redirectUri}`;
+  // Request email scope explicitly from Google
+  const scope = encodeURIComponent('openid profile email');
+  window.location.href = `${functionAppUrl}/.auth/login/google?post_login_redirect_uri=${redirectUri}&scope=${scope}`;
 }

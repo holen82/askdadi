@@ -43,10 +43,20 @@ public class AuthService
         {
             var decodedBytes = Convert.FromBase64String(userHeader.ToString());
             var decodedUser = Encoding.UTF8.GetString(decodedBytes);
+            
+            // Log the full decoded JSON to see what we're getting
+            _logger.LogInformation("Decoded user principal: {UserPrincipal}", decodedUser);
+            
             var user = JsonSerializer.Deserialize<User>(decodedUser, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
+            
+            if (user != null)
+            {
+                _logger.LogInformation("Parsed user - UserId: {UserId}, Provider: {Provider}, UserDetails present: {HasDetails}", 
+                    user.UserId, user.IdentityProvider, !string.IsNullOrEmpty(user.UserDetails));
+            }
             
             return user;
         }
