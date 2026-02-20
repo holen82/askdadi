@@ -3,7 +3,6 @@ import type { Message } from '@/types/chat';
 export function renderMessage(message: Message): string {
   const isUser = message.role === 'user';
   const avatarText = isUser ? 'Du' : 'AI';
-  const formattedTime = formatTimestamp(message.timestamp);
   const formattedContent = formatContent(message.content);
 
   return `
@@ -14,24 +13,6 @@ export function renderMessage(message: Message): string {
       </div>
     </div>
   `;
-}
-
-function formatTimestamp(date: Date): string {
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-
-  if (seconds < 60) {
-    return 'Just now';
-  } else if (minutes < 60) {
-    return `${minutes}m ago`;
-  } else if (hours < 24) {
-    return `${hours}h ago`;
-  } else {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
 }
 
 function formatContent(content: string): string {

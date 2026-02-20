@@ -42,7 +42,17 @@ export async function getUserInfo(): Promise<User | null> {
       return null;
     }
 
-    const user: User = await response.json();
+    const data = await response.json();
+    
+    // Transform PascalCase response from backend to camelCase
+    const user: User = {
+      email: data.Email || data.email,
+      name: data.Name || data.name,
+      userId: data.UserId || data.userId,
+      provider: data.Provider || data.provider,
+      isAuthenticated: data.IsAuthenticated ?? data.isAuthenticated
+    };
+    
     return user;
   } catch (error) {
     console.error('Error fetching user info:', error);
