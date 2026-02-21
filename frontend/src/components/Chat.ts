@@ -1,12 +1,15 @@
-import type { Message, ChatState } from '@/types/chat';
+import type { Message, ChatState, Conversation } from '@/types/chat';
 import { renderMessage } from './Message';
 import { chatService, type ChatMessage } from '@/services/chatService';
+import { ConversationStorage } from '@/services/conversationStorage';
 
 const state: ChatState = {
   messages: [],
   isLoading: false,
   error: null
 };
+
+let currentConversation: Conversation | null = null;
 
 export function renderChat(): string {
   return `
@@ -116,6 +119,15 @@ async function handleSendMessage(): Promise<void> {
 
   if (!content || state.isLoading) return;
 
+  // Create new conversation if needed
+  if (!currentConversation) {
+    currentConversation = ConversationStorage.createConversation(content);
+    ConversationStorage.setActiveConversation(currentConversation.id);
+    
+    // Notify to update sidebar
+    window.dispatchEvent(new CustomEvent('conversation-created'));
+  }
+
   const userMessage: Message = {
     id: generateId(),
     role: 'user',
@@ -193,6 +205,15 @@ async function handleSendMessage(): Promise<void> {
       if (contentWrapper) {
         contentWrapper.classList.remove('streaming');
       }
+    }
+
+    // Save conversation after successful response
+    if (currentConversation) {
+      currentConversation.messages = [...state.messages];
+      ConversationStorage.saveConversation(currentConversation);
+      
+      // Notify sidebar to update
+      window.dispatchEvent(new CustomEvent('conversation-updated'));
     }
   } catch (error) {
     console.error('Failed to send message:', error);
@@ -291,4 +312,41 @@ function escapeHtml(unsafe: string): string {
 
 export function getChatState(): ChatState {
   return { ...state };
+}
+
+export function loadConversation(conversationId: string): void {
+  const conversation = ConversationStorage.getConversation(conversationId);
+  
+  if (conversation) {
+    currentConversation = conversation;
+    state.messages = [...conversation.messages];
+    state.error = null;
+    ConversationStorage.setActiveConversation(conversationId);
+    updateUI();
+  }
+}
+
+export function startNewConversation(): void {
+  currentConversation = null;
+  state.messages = [];
+  state.error = null;
+  ConversationStorage.clearActiveConversation();
+  updateUI();
+  
+  const input = document.getElementById('chat-input') as HTMLTextAreaElement;
+  if (input) {
+    input.focus();
+  }
+}
+
+export function getCurrentConversationId(): string | null {
+  return currentConversation?.id || null;
+}
+
+// Initialize conversation from storage on load
+export function initConversationFromStorage(): void {
+  const activeId = ConversationStorage.getActiveConversationId();
+  if (activeId) {
+    loadConversation(activeId);
+  }
 }
