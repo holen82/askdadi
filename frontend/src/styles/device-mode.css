@@ -1,0 +1,180 @@
+/**
+ * Device Mode Styling
+ * 
+ * Base styles and utilities for mobile vs PC modes.
+ * Use these classes and CSS variables for mode-specific styling.
+ * 
+ * The body element automatically gets 'device-mobile' or 'device-pc' class.
+ * You can scope styles using these classes or the [data-device-mode] attribute.
+ * 
+ * Usage examples:
+ * 
+ * 1. Mode-specific styles:
+ *    .device-mobile .my-component { padding: 10px; }
+ *    .device-pc .my-component { padding: 20px; }
+ * 
+ * 2. Using attribute selector:
+ *    [data-device-mode="mobile"] .my-component { ... }
+ * 
+ * 3. Using CSS variables:
+ *    .my-component { padding: var(--spacing-md); }
+ */
+
+:root {
+  /* Spacing - PC values */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* Font sizes - PC values */
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+  
+  /* Component dimensions - PC values */
+  --header-height: 60px;
+  --input-height: 44px;
+  --border-radius: 8px;
+  --max-content-width: 1200px;
+  
+  /* Touch targets - PC values */
+  --touch-target-min: 44px;
+  --button-padding: 12px 24px;
+}
+
+/* Mobile-specific CSS variables */
+.device-mobile,
+[data-device-mode="mobile"] {
+  /* Smaller spacing on mobile */
+  --spacing-xs: 2px;
+  --spacing-sm: 4px;
+  --spacing-md: 8px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  
+  /* Adjusted font sizes for mobile */
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-md: 15px;
+  --font-size-lg: 17px;
+  --font-size-xl: 22px;
+  
+  /* Component dimensions for mobile */
+  --header-height: 56px;
+  --input-height: 48px;
+  --border-radius: 6px;
+  --max-content-width: 100%;
+  
+  /* Larger touch targets on mobile */
+  --touch-target-min: 48px;
+  --button-padding: 14px 20px;
+}
+
+/* Utility classes for mode-specific visibility */
+.mobile-only {
+  display: none;
+}
+
+.device-mobile .mobile-only {
+  display: block;
+}
+
+.pc-only {
+  display: none;
+}
+
+.device-pc .pc-only {
+  display: block;
+}
+
+/* Inline variants */
+.mobile-only-inline {
+  display: none;
+}
+
+.device-mobile .mobile-only-inline {
+  display: inline;
+}
+
+.pc-only-inline {
+  display: none;
+}
+
+.device-pc .pc-only-inline {
+  display: inline;
+}
+
+/* Flex variants */
+.mobile-only-flex {
+  display: none;
+}
+
+.device-mobile .mobile-only-flex {
+  display: flex;
+}
+
+.pc-only-flex {
+  display: none;
+}
+
+.device-pc .pc-only-flex {
+  display: flex;
+}
+
+/* Common responsive adjustments */
+.device-mobile {
+  /* Prevent text size adjustment on mobile */
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  
+  /* Improve tap highlighting */
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Disable hover effects on mobile */
+@media (hover: none) {
+  .hover-only:hover {
+    /* Hover styles will be ignored */
+    all: unset;
+  }
+}
+
+/* Enable hover effects only on devices that support it */
+@media (hover: hover) {
+  .device-pc .hover-enabled:hover {
+    /* Hover styles apply here */
+  }
+}
+
+/* Safe area insets for mobile devices (notches, etc.) */
+.device-mobile {
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+}
+
+/* Touch-friendly button sizing */
+.device-mobile button,
+.device-mobile .button {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  padding: var(--button-padding);
+}
+
+/* Mobile-specific scrolling (momentum on iOS) */
+.device-mobile .scrollable {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+}
+
+/* Prevent zoom on input focus (mobile) */
+.device-mobile input,
+.device-mobile textarea,
+.device-mobile select {
+  font-size: 16px; /* Prevents zoom on iOS */
+}

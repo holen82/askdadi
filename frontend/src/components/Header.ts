@@ -3,15 +3,18 @@
  */
 
 import { logout } from '@/services/authService';
+import { deviceMode, modeClasses } from '@/utils/deviceMode';
 import type { User } from '@/types/auth';
 
 export function renderHeader(user: User): string {
   return `
     <header class="app-header">
-      <h1 class="app-title">AI Assistant</h1>
-      <div class="user-menu">
-        <span class="user-email">${escapeHtml(user.email)}</span>
-        <button id="logout-button" class="logout-button">Logout</button>
+      <h1 class="app-title">${deviceMode.select({ mobile: 'DadI', pc: 'Dad Intelligence' })}</h1>
+      <div class="${modeClasses({ base: 'user-menu', pc: 'user-menu-expanded' })}">
+        <span class="${deviceMode.pcClass('user-email')}">${escapeHtml(user.email)}</span>
+        <button id="logout-button" class="${modeClasses({ base: 'logout-button', mobile: 'logout-compact' })}">
+          ${deviceMode.render({ mobile: '⎋', pc: 'Logout' })}
+        </button>
       </div>
     </header>
   `;

@@ -20,7 +20,7 @@ export function renderChat(): string {
           <textarea
             id="chat-input"
             class="chat-input"
-            placeholder="Type your message here..."
+            placeholder="Skriv her..."
             rows="2"
             ${state.isLoading ? 'disabled' : ''}
           ></textarea>
@@ -28,7 +28,7 @@ export function renderChat(): string {
             id="chat-send-button"
             class="chat-send-button"
             ${state.isLoading ? 'disabled' : ''}
-            aria-label="Send message"
+            aria-label="Send melding"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M22 2L11 13"></path>
@@ -36,7 +36,7 @@ export function renderChat(): string {
             </svg>
           </button>
         </div>
-        ${state.isLoading ? '<div class="chat-loading">AI is thinking...</div>' : ''}
+        ${state.isLoading ? '<div class="chat-loading">DadI tenker...</div>' : ''}
       </div>
     </div>
   `;
@@ -46,12 +46,12 @@ function renderMessages(): string {
   if (state.messages.length === 0) {
     return `
       <div class="chat-empty-state">
-        <h3>Welcome to Dadi AI Assistant</h3>
-        <p>Start a conversation by typing a message below.</p>
+        <h3>Lurer du på noe? spør DadI</h3>
+        <p>Start en samtale ved å skrive en melding nedenfor.</p>
       </div>
     `;
   }
-  
+
   return state.messages.map(message => renderMessage(message)).join('');
 }
 
@@ -92,7 +92,7 @@ export function initChat(): void {
   }
 
   sendButton.addEventListener('click', handleSendMessage);
-  
+
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -109,11 +109,11 @@ export function initChat(): void {
 
 async function handleSendMessage(): Promise<void> {
   const input = document.getElementById('chat-input') as HTMLTextAreaElement;
-  
+
   if (!input) return;
 
   const content = input.value.trim();
-  
+
   if (!content || state.isLoading) return;
 
   const userMessage: Message = {
@@ -127,7 +127,7 @@ async function handleSendMessage(): Promise<void> {
   state.error = null;
   input.value = '';
   input.style.height = 'auto';
-  
+
   updateUI();
 
   // Create assistant message placeholder
@@ -160,27 +160,27 @@ async function handleSendMessage(): Promise<void> {
     // Stream the response
     let fullContent = '';
     const messageElement = document.querySelector(`[data-message-id="${assistantMessageId}"]`);
-    
+
     if (messageElement) {
       const contentWrapper = messageElement.querySelector('.message-content');
-      
+
       if (contentWrapper) {
         contentWrapper.classList.add('streaming');
       }
-      
+
       for await (const chunk of chatService.streamMessage(messages)) {
         fullContent += chunk;
         assistantMessage.content = fullContent;
-        
+
         if (contentWrapper) {
           // Update content smoothly without jumping
           const scrollContainer = document.getElementById('chat-messages');
-          const wasAtBottom = scrollContainer ? 
-            Math.abs(scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight) < 50 : 
+          const wasAtBottom = scrollContainer ?
+            Math.abs(scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight) < 50 :
             false;
-          
+
           contentWrapper.innerHTML = formatContent(fullContent);
-          
+
           // Only scroll if user was already at bottom
           if (wasAtBottom && scrollContainer) {
             requestAnimationFrame(() => {
@@ -189,7 +189,7 @@ async function handleSendMessage(): Promise<void> {
           }
         }
       }
-      
+
       if (contentWrapper) {
         contentWrapper.classList.remove('streaming');
       }
@@ -197,7 +197,7 @@ async function handleSendMessage(): Promise<void> {
   } catch (error) {
     console.error('Failed to send message:', error);
     state.error = error instanceof Error ? error.message : 'Failed to send message';
-    
+
     // Remove the failed assistant message
     const index = state.messages.findIndex(msg => msg.id === assistantMessageId);
     if (index !== -1) {
@@ -206,7 +206,7 @@ async function handleSendMessage(): Promise<void> {
   } finally {
     state.isLoading = false;
     updateUI();
-    
+
     // Focus the input after response is complete
     const input = document.getElementById('chat-input') as HTMLTextAreaElement;
     if (input) {
@@ -217,29 +217,29 @@ async function handleSendMessage(): Promise<void> {
 
 function formatContent(content: string): string {
   let formatted = escapeHtml(content);
-  
+
   // Convert code blocks (```...```)
   formatted = formatted.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
-  
+
   // Convert inline code (`...`)
   formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
-  
+
   // Convert bold (**...**)
   formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  
+
   // Convert italic (*...*)
   formatted = formatted.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-  
+
   // Convert newlines to <br>
   formatted = formatted.replace(/\n/g, '<br>');
-  
+
   return formatted;
 }
 
 function updateUI(): void {
   const messagesContainer = document.getElementById('chat-messages');
   const inputContainer = document.querySelector('.chat-input-container');
-  
+
   if (messagesContainer) {
     updateMessagesContainer(messagesContainer);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;

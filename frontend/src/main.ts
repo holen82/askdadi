@@ -3,6 +3,7 @@
  */
 
 import './styles/main.css';
+import './styles/device-mode.css';
 import './styles/login.css';
 import './styles/header.css';
 import './styles/chat.css';
@@ -11,6 +12,7 @@ import { initAuthGuard } from '@/utils/authGuard';
 import { renderHeader, initHeader } from '@/components/Header';
 import { renderChat, initChat } from '@/components/Chat';
 import { initDebugMode } from '@/utils/debugMode';
+import { deviceMode } from '@/utils/deviceMode';
 import type { User } from '@/types/auth';
 
 // Initialize the authenticated application
@@ -33,6 +35,7 @@ function initAuthenticatedApp(user: User): void {
   initChat();
 
   console.log('AI Assistant application initialized for user:', user.email);
+  console.log('Device mode:', deviceMode.getMode());
 }
 
 // Initialize the application
