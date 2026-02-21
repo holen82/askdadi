@@ -36,7 +36,7 @@ export function renderChat(): string {
             </svg>
           </button>
         </div>
-        ${state.isLoading ? '<div class="chat-loading">DadI tenker...</div>' : ''}
+        ${state.isLoading ? '<div class="chat-loading">Dad-I tenker...</div>' : ''}
       </div>
     </div>
   `;
@@ -46,7 +46,7 @@ function renderMessages(): string {
   if (state.messages.length === 0) {
     return `
       <div class="chat-empty-state">
-        <h3>Lurer du på noe? spør DadI</h3>
+        <h3>Lurer du på noe? Spør Dad-I</h3>
         <p>Start en samtale ved å skrive en melding nedenfor.</p>
       </div>
     `;

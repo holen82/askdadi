@@ -48,6 +48,14 @@
   align-items: flex-start;
 }
 
+.message-label {
+  display: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9ca3af;
+  padding: 0 0.5rem;
+}
+
 .message-content {
   padding: 0.75rem 1rem;
   border-radius: 12px;
@@ -133,5 +141,34 @@
   }
   51%, 100% {
     opacity: 0;
+  }
+}
+
+/* Mobile layout: show labels above messages, hide avatars */
+@media (max-width: 768px) {
+  .message-avatar {
+    display: none;
+  }
+  
+  .message-label {
+    display: block;
+  }
+  
+  .message-content-wrapper {
+    max-width: 100%;
+  }
+  
+  .message {
+    flex-direction: column;
+  }
+  
+  .message-user {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  
+  .message-assistant {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

@@ -3,12 +3,14 @@ import type { Message } from '@/types/chat';
 export function renderMessage(message: Message): string {
   const isUser = message.role === 'user';
   const avatarText = isUser ? 'Du' : 'AI';
+  const labelText = isUser ? 'Jeg' : 'Dad-I';
   const formattedContent = formatContent(message.content);
 
   return `
     <div class="message message-${message.role}" data-message-id="${message.id}">
       <div class="message-avatar">${avatarText}</div>
       <div class="message-content-wrapper">
+        <div class="message-label">${labelText}</div>
         <div class="message-content">${formattedContent}</div>
       </div>
     </div>

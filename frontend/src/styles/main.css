@@ -13,7 +13,7 @@
   --color-bg: #0a0a0a;
   --color-text: #e5e7eb;
   --color-border: #374151;
-  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: ui-sans-serif;
   /* Dynamic viewport height accounting for mobile browser UI */
   --vh: 1vh;
 }
