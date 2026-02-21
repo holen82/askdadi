@@ -38,10 +38,21 @@ function initAuthenticatedApp(user: User): void {
   console.log('Device mode:', deviceMode.getMode());
 }
 
+// Set viewport height CSS variable for mobile browsers
+function setViewportHeight(): void {
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+
 // Initialize the application
 async function initApp(): Promise<void> {
   // Initialize debug mode first to capture all errors
   initDebugMode();
+  
+  // Set viewport height for mobile browsers
+  setViewportHeight();
+  window.addEventListener('resize', setViewportHeight);
+  window.addEventListener('orientationchange', setViewportHeight);
   
   await initAuthGuard(initAuthenticatedApp);
 }
