@@ -29,7 +29,7 @@ export interface ModeConfig<T> {
 class DeviceModeManager {
   private mode: DeviceMode;
   private listeners: Set<(mode: DeviceMode) => void> = new Set();
-  private mediaQuery: MediaQuery | null = null;
+  private mediaQuery: MediaQueryList | null = null;
 
   constructor() {
     this.mode = this.detectMode();
