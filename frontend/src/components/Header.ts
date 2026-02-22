@@ -24,6 +24,14 @@ export function renderHeader(user: User): string {
             </svg>
             Samtaler
           </button>
+          <button class="menu-item" id="info-menu-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            Info
+          </button>
         </div>
         <h1 class="app-title">${deviceMode.select({ mobile: 'Dad-I', pc: 'Dad Intelligence' })}</h1>
       </div>
@@ -37,7 +45,7 @@ export function renderHeader(user: User): string {
   `;
 }
 
-export function initHeader(onToggleSidebar?: () => void): void {
+export function initHeader(onToggleSidebar?: () => void, onToggleInfoPanel?: () => void): void {
   const logoutButton = document.getElementById('logout-button');
   if (logoutButton) {
     logoutButton.addEventListener('click', handleLogout);
@@ -46,6 +54,7 @@ export function initHeader(onToggleSidebar?: () => void): void {
   const menuButton = document.getElementById('menu-button');
   const menuDropdown = document.getElementById('menu-dropdown');
   const conversationsMenuItem = document.getElementById('conversations-menu-item');
+  const infoMenuItem = document.getElementById('info-menu-item');
 
   if (menuButton && menuDropdown) {
     // Toggle menu dropdown
@@ -61,11 +70,19 @@ export function initHeader(onToggleSidebar?: () => void): void {
       }
     });
 
-    // Handle menu item click
+    // Handle conversations menu item click
     if (conversationsMenuItem && onToggleSidebar) {
       conversationsMenuItem.addEventListener('click', () => {
         menuDropdown.classList.remove('visible');
         onToggleSidebar();
+      });
+    }
+
+    // Handle info menu item click
+    if (infoMenuItem && onToggleInfoPanel) {
+      infoMenuItem.addEventListener('click', () => {
+        menuDropdown.classList.remove('visible');
+        onToggleInfoPanel();
       });
     }
   }

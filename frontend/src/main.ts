@@ -9,10 +9,12 @@ import './styles/header.css';
 import './styles/chat.css';
 import './styles/message.css';
 import './styles/sidebar.css';
+import './styles/info-panel.css';
 import { initAuthGuard } from '@/utils/authGuard';
 import { renderHeader, initHeader } from '@/components/Header';
 import { renderChat, initChat, loadConversation, startNewConversation, getCurrentConversationId, initConversationFromStorage } from '@/components/Chat';
 import { renderConversationSidebar, initConversationSidebar } from '@/components/ConversationSidebar';
+import { renderInfoPanel, initInfoPanel } from '@/components/InfoPanel';
 import { ConversationStorage } from '@/services/conversationStorage';
 import { SwipeGestureHandler } from '@/utils/swipeGesture';
 import { initDebugMode } from '@/utils/debugMode';
@@ -20,6 +22,7 @@ import { deviceMode } from '@/utils/deviceMode';
 import type { User } from '@/types/auth';
 
 let sidebarOpen = true;
+let infoPanelOpen = false;
 
 // Initialize the authenticated application
 function initAuthenticatedApp(user: User): void {
@@ -28,8 +31,8 @@ function initAuthenticatedApp(user: User): void {
     throw new Error('App element not found');
   }
 
-  // Set initial sidebar state based on device
-  sidebarOpen = window.innerWidth > 768;
+  // Panels start closed on all devices
+  sidebarOpen = false;
 
   // Render main app structure
   appElement.innerHTML = `
@@ -44,6 +47,7 @@ function initAuthenticatedApp(user: User): void {
         onDeleteConversation: () => {},
         onClose: () => {}
       })}
+      ${renderInfoPanel(false)}
       <main class="app-main main-content ${sidebarOpen ? '' : 'sidebar-closed'}">
         ${renderChat()}
       </main>
@@ -52,9 +56,11 @@ function initAuthenticatedApp(user: User): void {
   `;
 
   // Initialize components
-  initHeader(handleToggleSidebar);
+  initHeader(handleToggleSidebar, handleToggleInfoPanel);
+  initInfoPanel(handleCloseInfoPanel);
   initChat();
   initConversationFromStorage();
+  checkAndResetStaleConversation();
 
   // Initialize sidebar
   initConversationSidebar(
@@ -70,13 +76,15 @@ function initAuthenticatedApp(user: User): void {
     new SwipeGestureHandler({
       element: mainContent as HTMLElement,
       onSwipeRight: () => {
-        if (window.innerWidth <= 768 && !sidebarOpen) {
-          handleToggleSidebar();
+        if (window.innerWidth <= 768) {
+          if (infoPanelOpen) handleCloseInfoPanel();
+          else if (!sidebarOpen) handleToggleSidebar();
         }
       },
       onSwipeLeft: () => {
-        if (window.innerWidth <= 768 && sidebarOpen) {
-          handleToggleSidebar();
+        if (window.innerWidth <= 768) {
+          if (sidebarOpen) handleCloseSidebar();
+          else if (!infoPanelOpen) handleToggleInfoPanel();
         }
       },
       threshold: 50
@@ -87,8 +95,9 @@ function initAuthenticatedApp(user: User): void {
   const backdrop = document.getElementById('sidebar-backdrop');
   if (backdrop) {
     backdrop.addEventListener('click', () => {
-      if (window.innerWidth <= 768 && sidebarOpen) {
-        handleToggleSidebar();
+      if (window.innerWidth <= 768) {
+        if (sidebarOpen) handleToggleSidebar();
+        else if (infoPanelOpen) handleToggleInfoPanel();
       }
     });
   }
@@ -141,8 +150,68 @@ function handleCloseSidebar(): void {
   }
 }
 
+function handleToggleInfoPanel(): void {
+  infoPanelOpen = !infoPanelOpen;
+
+  const infoPanel = document.getElementById('info-panel');
+  const mainContent = document.querySelector('.main-content');
+  const backdrop = document.getElementById('sidebar-backdrop');
+
+  // If opening info panel, close sidebar first (mutual exclusion)
+  if (infoPanelOpen && sidebarOpen) {
+    sidebarOpen = false;
+    const sidebar = document.getElementById('conversation-sidebar');
+    if (sidebar) {
+      sidebar.classList.remove('open');
+      sidebar.classList.add('closed');
+    }
+  }
+
+  if (infoPanel) {
+    if (infoPanelOpen) {
+      infoPanel.classList.add('open');
+      infoPanel.classList.remove('closed');
+    } else {
+      infoPanel.classList.remove('open');
+      infoPanel.classList.add('closed');
+    }
+  }
+
+  if (mainContent) {
+    if (infoPanelOpen && window.innerWidth > 768) {
+      mainContent.classList.remove('sidebar-closed');
+    } else if (!infoPanelOpen && !sidebarOpen) {
+      mainContent.classList.add('sidebar-closed');
+    }
+  }
+
+  if (backdrop && window.innerWidth <= 768) {
+    if (infoPanelOpen) {
+      backdrop.classList.add('visible');
+    } else {
+      backdrop.classList.remove('visible');
+    }
+  }
+}
+
+function handleCloseInfoPanel(): void {
+  if (infoPanelOpen) {
+    handleToggleInfoPanel();
+  }
+}
+
 function handleToggleSidebar(): void {
   sidebarOpen = !sidebarOpen;
+
+  // If opening sidebar, close info panel first (mutual exclusion)
+  if (sidebarOpen && infoPanelOpen) {
+    infoPanelOpen = false;
+    const infoPanel = document.getElementById('info-panel');
+    if (infoPanel) {
+      infoPanel.classList.remove('open');
+      infoPanel.classList.add('closed');
+    }
+  }
 
   const sidebar = document.getElementById('conversation-sidebar');
   const mainContent = document.querySelector('.main-content');
@@ -177,19 +246,26 @@ function handleToggleSidebar(): void {
 }
 
 function handleWindowResize(): void {
-  const wasMobile = sidebarOpen && window.innerWidth <= 768;
-  const isDesktop = window.innerWidth > 768;
-
-  if (isDesktop && !sidebarOpen) {
-    // Desktop should show sidebar by default
-    sidebarOpen = true;
-    handleToggleSidebar();
-  } else if (wasMobile) {
-    // Close sidebar when resizing to desktop from mobile
+  // Clean up mobile backdrop when resizing to desktop
+  if (window.innerWidth > 768 && (sidebarOpen || infoPanelOpen)) {
     const backdrop = document.getElementById('sidebar-backdrop');
     if (backdrop) {
       backdrop.classList.remove('visible');
     }
+  }
+}
+
+function checkAndResetStaleConversation(): void {
+  const activeId = ConversationStorage.getActiveConversationId();
+  if (!activeId) return;
+
+  const conversation = ConversationStorage.getConversation(activeId);
+  if (!conversation || conversation.messages.length === 0) return;
+
+  const lastMessage = conversation.messages[conversation.messages.length - 1];
+  const thirtyMinutes = 30 * 60 * 1000;
+  if (Date.now() - lastMessage.timestamp.getTime() > thirtyMinutes) {
+    startNewConversation();
   }
 }
 
