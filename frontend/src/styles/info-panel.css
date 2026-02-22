@@ -74,6 +74,10 @@
     z-index: 1000;
   }
 
+  .info-panel.closed {
+    transform: translateX(100%);
+  }
+
   .info-panel.open {
     transform: translateX(0);
   }

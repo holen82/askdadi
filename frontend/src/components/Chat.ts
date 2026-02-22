@@ -112,7 +112,7 @@ export function initChat(): void {
   input.addEventListener('input', () => {
     input.style.height = 'auto';
     input.style.height = `${Math.min(input.scrollHeight, 150)}px`;
-    updateCharCounter(input.value.length);
+    updateCharCounter(input.value.trim().length);
   });
 }
 

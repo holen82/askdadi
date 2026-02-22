@@ -10,12 +10,16 @@ export class SwipeGestureHandler {
   private onSwipeRight: () => void;
   private onSwipeLeft: () => void;
   private threshold: number;
-  
+
   private touchStartX: number = 0;
   private touchStartY: number = 0;
   private touchEndX: number = 0;
   private touchEndY: number = 0;
   private isSwiping: boolean = false;
+
+  private boundTouchStart!: (e: TouchEvent) => void;
+  private boundTouchMove!: (e: TouchEvent) => void;
+  private boundTouchEnd!: () => void;
 
   constructor(options: SwipeGestureOptions) {
     this.element = options.element;
@@ -27,9 +31,12 @@ export class SwipeGestureHandler {
   }
 
   private init(): void {
-    this.element.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: true });
-    this.element.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: true });
-    this.element.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: true });
+    this.boundTouchStart = this.handleTouchStart.bind(this);
+    this.boundTouchMove  = this.handleTouchMove.bind(this);
+    this.boundTouchEnd   = this.handleTouchEnd.bind(this);
+    this.element.addEventListener('touchstart', this.boundTouchStart, { passive: true });
+    this.element.addEventListener('touchmove',  this.boundTouchMove,  { passive: true });
+    this.element.addEventListener('touchend',   this.boundTouchEnd,   { passive: true });
   }
 
   private handleTouchStart(e: TouchEvent): void {
@@ -70,8 +77,8 @@ export class SwipeGestureHandler {
   }
 
   destroy(): void {
-    this.element.removeEventListener('touchstart', this.handleTouchStart.bind(this));
-    this.element.removeEventListener('touchmove', this.handleTouchMove.bind(this));
-    this.element.removeEventListener('touchend', this.handleTouchEnd.bind(this));
+    this.element.removeEventListener('touchstart', this.boundTouchStart);
+    this.element.removeEventListener('touchmove',  this.boundTouchMove);
+    this.element.removeEventListener('touchend',   this.boundTouchEnd);
   }
 }

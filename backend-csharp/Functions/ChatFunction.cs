@@ -180,7 +180,10 @@ public class ChatFunction
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during streaming");
-            var errorPayload = ex.Message == "CONTEXT_LENGTH_EXCEEDED"
+            var isContextLengthError = ex.Message == "CONTEXT_LENGTH_EXCEEDED"
+                || ex.Message.Contains("context_length_exceeded", StringComparison.OrdinalIgnoreCase)
+                || ex.Message.Contains("maximum context length", StringComparison.OrdinalIgnoreCase);
+            var errorPayload = isContextLengthError
                 ? new { error = "CONTEXT_LENGTH_EXCEEDED" }
                 : new { error = ex.Message };
             var errorData = $"data: {JsonSerializer.Serialize(errorPayload)}\n\n";

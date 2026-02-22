@@ -12,11 +12,13 @@ export function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
-// Returns the tail of messages that fits within the budget, dropping oldest first
+// Returns the tail of messages that fits within the budget, dropping oldest first.
+// Always includes at least the most recent message even if it exceeds the budget.
 export function trimMessagesToBudget<T extends { role: string; content: string }>(
   messages: T[],
   budgetTokens: number = TOKEN_BUDGET.CONVERSATION_BUDGET
 ): T[] {
+  if (messages.length === 0) return messages;
   let totalTokens = 0;
   let startIndex = messages.length;
   for (let i = messages.length - 1; i >= 0; i--) {
@@ -25,5 +27,6 @@ export function trimMessagesToBudget<T extends { role: string; content: string }
     totalTokens += msgTokens;
     startIndex = i;
   }
-  return messages.slice(startIndex);
+  // Always send at least the most recent message
+  return messages.slice(Math.min(startIndex, messages.length - 1));
 }

@@ -148,8 +148,11 @@ class ChatService {
                 yield parsed.chunk;
               }
             } catch (e) {
-              if (e instanceof Error && e.message.startsWith('Samtalen')) throw e;
-              console.error('Failed to parse SSE data:', data, e);
+              if (e instanceof SyntaxError) {
+                console.error('Failed to parse SSE data:', data, e);
+              } else {
+                throw e;
+              }
             }
           }
         }

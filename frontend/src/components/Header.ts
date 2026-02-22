@@ -45,10 +45,16 @@ export function renderHeader(user: User): string {
   `;
 }
 
+let headerAbortController: AbortController | null = null;
+
 export function initHeader(onToggleSidebar?: () => void, onToggleInfoPanel?: () => void): void {
+  headerAbortController?.abort();
+  headerAbortController = new AbortController();
+  const { signal } = headerAbortController;
+
   const logoutButton = document.getElementById('logout-button');
   if (logoutButton) {
-    logoutButton.addEventListener('click', handleLogout);
+    logoutButton.addEventListener('click', handleLogout, { signal });
   }
 
   const menuButton = document.getElementById('menu-button');
@@ -61,21 +67,21 @@ export function initHeader(onToggleSidebar?: () => void, onToggleInfoPanel?: () 
     menuButton.addEventListener('click', (e) => {
       e.stopPropagation();
       menuDropdown.classList.toggle('visible');
-    });
+    }, { signal });
 
     // Close menu when clicking outside
     document.addEventListener('click', (e) => {
       if (!menuButton.contains(e.target as Node) && !menuDropdown.contains(e.target as Node)) {
         menuDropdown.classList.remove('visible');
       }
-    });
+    }, { signal });
 
     // Handle conversations menu item click
     if (conversationsMenuItem && onToggleSidebar) {
       conversationsMenuItem.addEventListener('click', () => {
         menuDropdown.classList.remove('visible');
         onToggleSidebar();
-      });
+      }, { signal });
     }
 
     // Handle info menu item click
@@ -83,7 +89,7 @@ export function initHeader(onToggleSidebar?: () => void, onToggleInfoPanel?: () 
       infoMenuItem.addEventListener('click', () => {
         menuDropdown.classList.remove('visible');
         onToggleInfoPanel();
-      });
+      }, { signal });
     }
   }
 }
