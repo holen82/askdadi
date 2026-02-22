@@ -44,7 +44,6 @@ export function renderChat(): string {
           </button>
           <div id="char-counter" class="char-counter">0 / ${MAX_INPUT_CHARS}</div>
         </div>
-        ${state.isLoading ? '<div class="chat-loading">Dad-I tenker...</div>' : ''}
       </div>
     </div>
   `;
@@ -301,12 +300,7 @@ function updateUI(): void {
       errorDiv.remove();
     }
 
-    if (state.isLoading && !loadingDiv) {
-      const loadingElement = document.createElement('div');
-      loadingElement.className = 'chat-loading';
-      loadingElement.textContent = 'AI is thinking...';
-      inputContainer.appendChild(loadingElement);
-    } else if (!state.isLoading && loadingDiv) {
+    if (!state.isLoading && loadingDiv) {
       loadingDiv.remove();
     }
 

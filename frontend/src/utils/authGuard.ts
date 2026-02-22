@@ -18,8 +18,9 @@ export async function initAuthGuard(
   appElement.innerHTML = `
     <div style="display: flex; justify-content: center; align-items: center; height: 100vh;">
       <div style="text-align: center;">
-        <div class="loading-spinner"></div>
-        <p style="margin-top: 16px; color: #6b7280;">Loading...</p>
+        <div class="loading-brain">🧠</div>
+        <p style="margin-top: 16px; color: #6b7280; font-size: 1rem;">Dad-I farmer aura...</p>
+        <p style="margin-top: 4px; color: #4b5563; font-size: 0.75rem;">fr fr no cap</p>
       </div>
     </div>
   `;
