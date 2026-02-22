@@ -18,6 +18,10 @@ export function renderInfoPanel(isOpen: boolean): string {
               <span class="command-name">/idea &lt;tekst&gt;</span>
               <span class="command-desc">Send inn en idé</span>
             </li>
+            <li class="command-item">
+              <span class="command-name">/ideas</span>
+              <span class="command-desc">Vis alle innsendte ideer</span>
+            </li>
           </ul>
         </section>
       </div>

@@ -13,6 +13,7 @@ var host = new HostBuilder()
         // Register application services
         services.AddSingleton<AuthService>();
         services.AddSingleton<OpenAIService>();
+        services.AddSingleton<IdeaStorageService>();
     })
     .Build();
 

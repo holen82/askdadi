@@ -3,6 +3,9 @@ import { renderMessage } from './Message';
 import { chatService, type ChatMessage } from '@/services/chatService';
 import { trimMessagesToBudget } from '@/utils/tokenUtils';
 import { ConversationStorage } from '@/services/conversationStorage';
+import { dispatch, type ToolContext } from '@/tools/toolRegistry';
+import { registerIdeaTools } from '@/tools/ideaTool';
+registerIdeaTools();
 
 const MAX_INPUT_CHARS = 4000;
 
@@ -142,6 +145,29 @@ async function handleSendMessage(): Promise<void> {
     return;
   }
 
+  if (content.startsWith('/')) {
+    input.value = '';
+    input.style.height = 'auto';
+    updateCharCounter(0);
+    state.error = null;
+
+    const toolContext: ToolContext = {
+      addSystemMessage(text: string) {
+        state.messages.push({ id: generateId(), role: 'system', content: text, timestamp: new Date() });
+        updateUI();
+        if (currentConversation) {
+          currentConversation.messages = [...state.messages];
+          ConversationStorage.saveConversation(currentConversation);
+          window.dispatchEvent(new CustomEvent('conversation-updated'));
+        }
+      },
+      setError(msg: string) { state.error = msg; updateUI(); }
+    };
+
+    await dispatch(content, toolContext);
+    return;
+  }
+
   // Create new conversation if needed
   if (!currentConversation) {
     currentConversation = ConversationStorage.createConversation(content);
@@ -181,10 +207,10 @@ async function handleSendMessage(): Promise<void> {
     state.isLoading = true;
     updateUI();
 
-    // Build full history excluding the empty assistant placeholder, then trim to token budget
+    // Build full history excluding the empty assistant placeholder and system messages, then trim to token budget
     const allMessages: ChatMessage[] = state.messages
-      .filter(msg => msg.id !== assistantMessageId)
-      .map(msg => ({ role: msg.role, content: msg.content }));
+      .filter(msg => msg.id !== assistantMessageId && msg.role !== 'system')
+      .map(msg => ({ role: msg.role as 'user' | 'assistant', content: msg.content }));
 
     const messages = trimMessagesToBudget(allMessages);
 

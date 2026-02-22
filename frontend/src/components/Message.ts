@@ -1,6 +1,16 @@
 import type { Message } from '@/types/chat';
 
 export function renderMessage(message: Message): string {
+  if (message.role === 'system') {
+    return `
+    <div class="message message-system" data-message-id="${message.id}">
+      <div class="message-content message-system-content">
+        ${formatContent(message.content)}
+      </div>
+    </div>
+  `;
+  }
+
   const isUser = message.role === 'user';
   const avatarText = isUser ? 'Du' : 'AI';
   const labelText = isUser ? 'Jeg' : 'Dad-I';

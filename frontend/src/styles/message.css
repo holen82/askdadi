@@ -152,6 +152,21 @@
   100% { content: '⠋'; }
 }
 
+.message-system {
+  justify-content: center;
+}
+
+.message-system-content {
+  max-width: 90%;
+  padding: 0.6rem 1rem;
+  background-color: #1a2535;
+  border: 1px solid #2d4a6e;
+  border-radius: 8px;
+  color: #93c5fd;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
 /* Mobile layout: show labels above messages, hide avatars */
 @media (max-width: 768px) {
   .message-avatar {
