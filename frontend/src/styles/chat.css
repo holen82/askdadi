@@ -2,9 +2,20 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  width: 100%;
   max-width: 900px;
+  min-width: 60%;
   margin: 0 auto;
   padding: 0 1rem;
+}
+
+/* Mobile: use full width */
+@media (max-width: 768px) {
+  .chat-container {
+    min-width: 100%;
+    max-width: 100%;
+    padding: 0 0.75rem;
+  }
 }
 
 .chat-messages {

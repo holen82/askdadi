@@ -1,8 +1,8 @@
-import type { Message, ChatState } from '@/types/chat';
+import type { Message, ChatState, Conversation } from '@/types/chat';
 import { renderMessage } from './Message';
 import { chatService, type ChatMessage } from '@/services/chatService';
 import { trimMessagesToBudget } from '@/utils/tokenUtils';
-import { loadMessages, saveMessages } from '@/services/conversationStore';
+import { ConversationStorage } from '@/services/conversationStorage';
 
 const MAX_INPUT_CHARS = 4000;
 
@@ -11,6 +11,8 @@ const state: ChatState = {
   isLoading: false,
   error: null
 };
+
+let currentConversation: Conversation | null = null;
 
 export function renderChat(): string {
   return `
@@ -88,18 +90,7 @@ function updateMessagesContainer(container: HTMLElement): void {
   });
 }
 
-export async function initChat(): Promise<void> {
-  // Restore persisted conversation before first render
-  const persisted = await loadMessages();
-  if (persisted.length > 0) {
-    state.messages = persisted;
-    const container = document.getElementById('chat-messages');
-    if (container) {
-      updateMessagesContainer(container);
-      container.scrollTop = container.scrollHeight;
-    }
-  }
-
+export function initChat(): void {
   const sendButton = document.getElementById('chat-send-button');
   const input = document.getElementById('chat-input') as HTMLTextAreaElement;
 
@@ -150,6 +141,15 @@ async function handleSendMessage(): Promise<void> {
     state.error = `Meldingen er for lang. Maks ${MAX_INPUT_CHARS} tegn tillatt.`;
     updateUI();
     return;
+  }
+
+  // Create new conversation if needed
+  if (!currentConversation) {
+    currentConversation = ConversationStorage.createConversation(content);
+    ConversationStorage.setActiveConversation(currentConversation.id);
+
+    // Notify to update sidebar
+    window.dispatchEvent(new CustomEvent('conversation-created'));
   }
 
   const userMessage: Message = {
@@ -226,6 +226,15 @@ async function handleSendMessage(): Promise<void> {
         contentWrapper.classList.remove('streaming');
       }
     }
+
+    // Save conversation after successful response
+    if (currentConversation) {
+      currentConversation.messages = [...state.messages];
+      ConversationStorage.saveConversation(currentConversation);
+
+      // Notify sidebar to update
+      window.dispatchEvent(new CustomEvent('conversation-updated'));
+    }
   } catch (error) {
     console.error('Failed to send message:', error);
     state.error = error instanceof Error ? error.message : 'Failed to send message';
@@ -238,9 +247,6 @@ async function handleSendMessage(): Promise<void> {
   } finally {
     state.isLoading = false;
     updateUI();
-
-    // Persist conversation (exclude empty placeholders)
-    await saveMessages(state.messages.filter(m => m.content !== ''));
 
     // Focus the input after response is complete
     const inputEl = document.getElementById('chat-input') as HTMLTextAreaElement;
@@ -326,4 +332,41 @@ function escapeHtml(unsafe: string): string {
 
 export function getChatState(): ChatState {
   return { ...state };
+}
+
+export function loadConversation(conversationId: string): void {
+  const conversation = ConversationStorage.getConversation(conversationId);
+
+  if (conversation) {
+    currentConversation = conversation;
+    state.messages = [...conversation.messages];
+    state.error = null;
+    ConversationStorage.setActiveConversation(conversationId);
+    updateUI();
+  }
+}
+
+export function startNewConversation(): void {
+  currentConversation = null;
+  state.messages = [];
+  state.error = null;
+  ConversationStorage.clearActiveConversation();
+  updateUI();
+
+  const input = document.getElementById('chat-input') as HTMLTextAreaElement;
+  if (input) {
+    input.focus();
+  }
+}
+
+export function getCurrentConversationId(): string | null {
+  return currentConversation?.id || null;
+}
+
+// Initialize conversation from storage on load
+export function initConversationFromStorage(): void {
+  const activeId = ConversationStorage.getActiveConversationId();
+  if (activeId) {
+    loadConversation(activeId);
+  }
 }

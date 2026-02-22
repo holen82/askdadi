@@ -130,18 +130,26 @@
 }
 
 .message-content.streaming::after {
-  content: '▋';
-  animation: blink 1s step-end infinite;
+  content: '⠋';
+  animation: braille-typing 1s steps(10) infinite;
   margin-left: 2px;
+  display: inline-block;
+  font-size: 1.2em;
+  line-height: 0.8;
 }
 
-@keyframes blink {
-  0%, 50% {
-    opacity: 1;
-  }
-  51%, 100% {
-    opacity: 0;
-  }
+@keyframes braille-typing {
+  0% { content: '⠋'; }
+  10% { content: '⠙'; }
+  20% { content: '⠹'; }
+  30% { content: '⠸'; }
+  40% { content: '⠼'; }
+  50% { content: '⠴'; }
+  60% { content: '⠦'; }
+  70% { content: '⠧'; }
+  80% { content: '⠇'; }
+  90% { content: '⠏'; }
+  100% { content: '⠋'; }
 }
 
 /* Mobile layout: show labels above messages, hide avatars */
