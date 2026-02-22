@@ -129,6 +129,17 @@ public class ChatFunction
         {
             _logger.LogError(ex, "Error processing chat");
 
+            if (ex.Message == "CONTEXT_LENGTH_EXCEEDED")
+            {
+                var r = req.CreateResponse(System.Net.HttpStatusCode.UnprocessableEntity);
+                await r.WriteAsJsonAsync(new ErrorResponse
+                {
+                    Error = "ContextLengthExceeded",
+                    Message = "Conversation is too long. Please start a new chat."
+                });
+                return r;
+            }
+
             var errorResponse = req.CreateResponse(System.Net.HttpStatusCode.InternalServerError);
             await errorResponse.WriteAsJsonAsync(new ErrorResponse
             {
@@ -169,7 +180,10 @@ public class ChatFunction
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during streaming");
-            var errorData = $"data: {JsonSerializer.Serialize(new { error = ex.Message })}\n\n";
+            var errorPayload = ex.Message == "CONTEXT_LENGTH_EXCEEDED"
+                ? new { error = "CONTEXT_LENGTH_EXCEEDED" }
+                : new { error = ex.Message };
+            var errorData = $"data: {JsonSerializer.Serialize(errorPayload)}\n\n";
             await response.Body.WriteAsync(Encoding.UTF8.GetBytes(errorData));
             await response.Body.FlushAsync();
             return response;

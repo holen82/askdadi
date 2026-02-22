@@ -16,7 +16,7 @@ import { deviceMode } from '@/utils/deviceMode';
 import type { User } from '@/types/auth';
 
 // Initialize the authenticated application
-function initAuthenticatedApp(user: User): void {
+async function initAuthenticatedApp(user: User): Promise<void> {
   const appElement = document.getElementById('app');
   if (!appElement) {
     throw new Error('App element not found');
@@ -32,7 +32,7 @@ function initAuthenticatedApp(user: User): void {
 
   // Initialize components
   initHeader();
-  initChat();
+  await initChat();
 
   console.log('AI Assistant application initialized for user:', user.email);
   console.log('Device mode:', deviceMode.getMode());

@@ -1,6 +1,10 @@
 import type { Message, ChatState } from '@/types/chat';
 import { renderMessage } from './Message';
 import { chatService, type ChatMessage } from '@/services/chatService';
+import { trimMessagesToBudget } from '@/utils/tokenUtils';
+import { loadMessages, saveMessages } from '@/services/conversationStore';
+
+const MAX_INPUT_CHARS = 4000;
 
 const state: ChatState = {
   messages: [],
@@ -22,6 +26,7 @@ export function renderChat(): string {
             class="chat-input"
             placeholder="Skriv her..."
             rows="2"
+            maxlength="${MAX_INPUT_CHARS}"
             ${state.isLoading ? 'disabled' : ''}
           ></textarea>
           <button
@@ -35,6 +40,7 @@ export function renderChat(): string {
               <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
             </svg>
           </button>
+          <div id="char-counter" class="char-counter">0 / ${MAX_INPUT_CHARS}</div>
         </div>
         ${state.isLoading ? '<div class="chat-loading">Dad-I tenker...</div>' : ''}
       </div>
@@ -82,7 +88,18 @@ function updateMessagesContainer(container: HTMLElement): void {
   });
 }
 
-export function initChat(): void {
+export async function initChat(): Promise<void> {
+  // Restore persisted conversation before first render
+  const persisted = await loadMessages();
+  if (persisted.length > 0) {
+    state.messages = persisted;
+    const container = document.getElementById('chat-messages');
+    if (container) {
+      updateMessagesContainer(container);
+      container.scrollTop = container.scrollHeight;
+    }
+  }
+
   const sendButton = document.getElementById('chat-send-button');
   const input = document.getElementById('chat-input') as HTMLTextAreaElement;
 
@@ -100,11 +117,24 @@ export function initChat(): void {
     }
   });
 
-  // Auto-resize textarea
+  // Auto-resize textarea + update char counter
   input.addEventListener('input', () => {
     input.style.height = 'auto';
     input.style.height = `${Math.min(input.scrollHeight, 150)}px`;
+    updateCharCounter(input.value.length);
   });
+}
+
+function updateCharCounter(length: number): void {
+  const counter = document.getElementById('char-counter');
+  if (!counter) return;
+  counter.textContent = `${length} / ${MAX_INPUT_CHARS}`;
+  counter.classList.remove('char-counter--near-limit', 'char-counter--at-limit');
+  if (length >= MAX_INPUT_CHARS) {
+    counter.classList.add('char-counter--at-limit');
+  } else if (length >= MAX_INPUT_CHARS * 0.85) {
+    counter.classList.add('char-counter--near-limit');
+  }
 }
 
 async function handleSendMessage(): Promise<void> {
@@ -115,6 +145,12 @@ async function handleSendMessage(): Promise<void> {
   const content = input.value.trim();
 
   if (!content || state.isLoading) return;
+
+  if (content.length > MAX_INPUT_CHARS) {
+    state.error = `Meldingen er for lang. Maks ${MAX_INPUT_CHARS} tegn tillatt.`;
+    updateUI();
+    return;
+  }
 
   const userMessage: Message = {
     id: generateId(),
@@ -127,6 +163,7 @@ async function handleSendMessage(): Promise<void> {
   state.error = null;
   input.value = '';
   input.style.height = 'auto';
+  updateCharCounter(0);
 
   updateUI();
 
@@ -145,17 +182,12 @@ async function handleSendMessage(): Promise<void> {
     state.isLoading = true;
     updateUI();
 
-    const messages: ChatMessage[] = state.messages
-      .filter(msg => msg.id !== assistantMessageId || msg.content !== '')
-      .map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }));
+    // Build full history excluding the empty assistant placeholder, then trim to token budget
+    const allMessages: ChatMessage[] = state.messages
+      .filter(msg => msg.id !== assistantMessageId)
+      .map(msg => ({ role: msg.role, content: msg.content }));
 
-    messages.push({
-      role: 'user',
-      content
-    });
+    const messages = trimMessagesToBudget(allMessages);
 
     // Stream the response
     let fullContent = '';
@@ -207,10 +239,13 @@ async function handleSendMessage(): Promise<void> {
     state.isLoading = false;
     updateUI();
 
+    // Persist conversation (exclude empty placeholders)
+    await saveMessages(state.messages.filter(m => m.content !== ''));
+
     // Focus the input after response is complete
-    const input = document.getElementById('chat-input') as HTMLTextAreaElement;
-    if (input) {
-      input.focus();
+    const inputEl = document.getElementById('chat-input') as HTMLTextAreaElement;
+    if (inputEl) {
+      inputEl.focus();
     }
   }
 }

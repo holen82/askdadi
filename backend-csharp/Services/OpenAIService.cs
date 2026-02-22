@@ -95,6 +95,9 @@ public class OpenAIService
         {
             _logger.LogError(ex, "OpenAI API error");
 
+            if (IsContextLengthError(ex))
+                throw new InvalidOperationException("CONTEXT_LENGTH_EXCEEDED", ex);
+
             var errorMessage = ex.Message;
             if (errorMessage.Contains("401") || errorMessage.Contains("authentication", StringComparison.OrdinalIgnoreCase))
             {
@@ -111,6 +114,13 @@ public class OpenAIService
 
             throw new InvalidOperationException("Failed to get response from AI. Please try again.", ex);
         }
+    }
+
+    private static bool IsContextLengthError(Exception ex)
+    {
+        var msg = ex.Message ?? string.Empty;
+        return msg.Contains("context_length_exceeded", StringComparison.OrdinalIgnoreCase)
+            || msg.Contains("maximum context length", StringComparison.OrdinalIgnoreCase);
     }
 
     public async IAsyncEnumerable<string> ChatStreamAsync(Models.ChatMessage[] messages)

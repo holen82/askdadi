@@ -47,6 +47,10 @@ class ChatService {
         throw new Error('You are not authorized to use this application.');
       }
 
+      if (response.status === 422) {
+        throw new Error('Samtalen er for lang. Start en ny chat for å fortsette.');
+      }
+
       if (!response.ok) {
         const errorData: ChatError = await response.json().catch(() => ({
           error: 'Unknown Error',
@@ -95,6 +99,10 @@ class ChatService {
         throw new Error('You are not authorized to use this application.');
       }
 
+      if (response.status === 422) {
+        throw new Error('Samtalen er for lang. Start en ny chat for å fortsette.');
+      }
+
       if (!response.ok) {
         const errorData: ChatError = await response.json().catch(() => ({
           error: 'Unknown Error',
@@ -131,12 +139,16 @@ class ChatService {
             try {
               const parsed = JSON.parse(data);
               if (parsed.error) {
+                if (parsed.error === 'CONTEXT_LENGTH_EXCEEDED') {
+                  throw new Error('Samtalen er for lang. Start en ny chat for å fortsette.');
+                }
                 throw new Error(parsed.error);
               }
               if (parsed.chunk) {
                 yield parsed.chunk;
               }
             } catch (e) {
+              if (e instanceof Error && e.message.startsWith('Samtalen')) throw e;
               console.error('Failed to parse SSE data:', data, e);
             }
           }
