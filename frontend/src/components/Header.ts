@@ -36,7 +36,7 @@ export function renderHeader(user: User): string {
         <h1 class="app-title">${deviceMode.select({ mobile: 'Dad-I', pc: 'Dad Intelligence' })}</h1>
       </div>
       <div class="${modeClasses({ base: 'user-menu', pc: 'user-menu-expanded' })}">
-        <span class="${deviceMode.pcClass('user-email')}">${escapeHtml(user.email)}</span>
+        <span class="${deviceMode.pcClass('user-email')}">${escapeHtml(user.name ? user.name.split(' ')[0] : user.email)}</span>
         <button id="logout-button" class="${modeClasses({ base: 'logout-button', mobile: 'logout-compact' })}">
           ${deviceMode.render({ mobile: '⎋', pc: 'Logg ut' })}
         </button>
