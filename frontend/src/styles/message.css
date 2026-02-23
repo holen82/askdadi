@@ -35,6 +35,7 @@
 
 .message-content-wrapper {
   max-width: 70%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -63,7 +64,10 @@
   font-size: 0.95rem;
   line-height: 1.5;
   word-wrap: break-word;
+  overflow-wrap: break-word;
   white-space: pre-wrap;
+  min-width: 0;
+  overflow: hidden;
   transition: height 0.1s ease-out;
   will-change: contents;
 }
@@ -116,6 +120,7 @@
   padding: 0.75rem;
   border-radius: 6px;
   overflow-x: auto;
+  max-width: 100%;
   margin: 0.5rem 0;
   border: 1px solid #374151;
 }
