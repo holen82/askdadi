@@ -16,6 +16,7 @@ export interface Conversation {
   title: string;
   timestamp: Date;
   messages: Message[];
+  pinned?: boolean;
 }
 
 export interface ConversationMetadata {
@@ -23,4 +24,5 @@ export interface ConversationMetadata {
   title: string;
   timestamp: Date;
   messageCount: number;
+  pinned?: boolean;
 }

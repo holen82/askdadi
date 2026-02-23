@@ -94,7 +94,12 @@ export class ConversationStorage {
           ...meta,
           timestamp: new Date(meta.timestamp)
         }))
-        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        .sort((a, b) => {
+          const aPinned = a.pinned ? 1 : 0;
+          const bPinned = b.pinned ? 1 : 0;
+          if (bPinned !== aPinned) return bPinned - aPinned;
+          return b.timestamp.getTime() - a.timestamp.getTime();
+        });
     } catch (error) {
       console.error('Failed to load conversation metadata:', error);
       return [];
@@ -121,6 +126,19 @@ export class ConversationStorage {
     }
   }
 
+  static togglePin(id: string): void {
+    try {
+      const conversations = this.getAllConversations();
+      const index = conversations.findIndex(c => c.id === id);
+      if (index < 0) return;
+      conversations[index].pinned = !conversations[index].pinned;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+      this.updateMetadata(conversations[index]);
+    } catch (error) {
+      console.error('Failed to toggle pin:', error);
+    }
+  }
+
   static setActiveConversation(id: string): void {
     localStorage.setItem(ACTIVE_KEY, id);
   }
@@ -142,7 +160,8 @@ export class ConversationStorage {
         id: conversation.id,
         title: conversation.title,
         timestamp: conversation.timestamp,
-        messageCount: conversation.messages.length
+        messageCount: conversation.messages.length,
+        pinned: conversation.pinned
       };
       
       if (index >= 0) {
@@ -163,7 +182,8 @@ export class ConversationStorage {
       id: conv.id,
       title: conv.title,
       timestamp: conv.timestamp,
-      messageCount: conv.messages.length
+      messageCount: conv.messages.length,
+      pinned: conv.pinned
     }));
     
     try {
@@ -172,7 +192,12 @@ export class ConversationStorage {
       console.error('Failed to cache metadata:', error);
     }
     
-    return metadata.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    return metadata.sort((a, b) => {
+      const aPinned = a.pinned ? 1 : 0;
+      const bPinned = b.pinned ? 1 : 0;
+      if (bPinned !== aPinned) return bPinned - aPinned;
+      return b.timestamp.getTime() - a.timestamp.getTime();
+    });
   }
 
   static clearAll(): void {

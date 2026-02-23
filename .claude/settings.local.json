@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(echo tools check done:*)"
+      "Bash(echo tools check done:*)",
+      "Bash(cd /c/Git/dadi/frontend && npx tsc --noEmit 2>&1)"
     ]
   }
 }

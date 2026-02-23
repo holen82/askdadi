@@ -45,6 +45,7 @@ function initAuthenticatedApp(user: User): void {
         onSelectConversation: () => {},
         onNewConversation: () => {},
         onDeleteConversation: () => {},
+        onPinConversation: () => {},
         onClose: () => {}
       })}
       ${renderInfoPanel(false)}
@@ -67,6 +68,7 @@ function initAuthenticatedApp(user: User): void {
     handleSelectConversation,
     handleNewConversation,
     handleDeleteConversation,
+    handlePinConversation,
     handleCloseSidebar
   );
 
@@ -141,6 +143,11 @@ function handleDeleteConversation(id: string): void {
     startNewConversation();
   }
 
+  updateSidebar();
+}
+
+function handlePinConversation(id: string): void {
+  ConversationStorage.togglePin(id);
   updateSidebar();
 }
 
@@ -284,6 +291,7 @@ function updateSidebar(): void {
     onSelectConversation: () => {},
     onNewConversation: () => {},
     onDeleteConversation: () => {},
+    onPinConversation: () => {},
     onClose: () => {}
   }).replace(/<aside[^>]*>|<\/aside>/g, '');
 
@@ -292,6 +300,7 @@ function updateSidebar(): void {
     handleSelectConversation,
     handleNewConversation,
     handleDeleteConversation,
+    handlePinConversation,
     handleCloseSidebar
   );
 }
