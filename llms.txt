@@ -1,0 +1,324 @@
+# DADI (Dad Intelligence) — LLM Reference
+
+## Project Overview
+
+Full-stack AI chatbot with Google OAuth authentication and email whitelist access control.
+
+- **Frontend**: TypeScript + Vite, vanilla JS (no UI framework), SSE streaming
+- **Backend**: C# Azure Functions (.NET 8 isolated worker)
+- **AI**: Azure OpenAI (chat completions, streaming)
+- **Auth**: Azure Easy Auth (Google OAuth) + backend email whitelist
+- **Storage**: localStorage (conversations), Azure Blob Storage (ideas)
+
+---
+
+## Directory Layout
+
+```
+dadi/
+├── backend-csharp/
+│   ├── DadiChatBot.csproj          .NET 8, Azure Functions V4
+│   ├── Program.cs                  DI: AuthService, OpenAIService, IdeaStorageService
+│   ├── host.json                   CORS, 10-min timeout, App Insights
+│   ├── local.settings.json         Dev env vars (BYPASS_AUTH, OpenAI keys, etc.)
+│   ├── Functions/
+│   │   ├── ChatFunction.cs         POST /api/chat — auth, SSE streaming
+│   │   ├── IdeaFunction.cs         POST/GET/DELETE /api/ideas — Blob storage
+│   │   └── UserFunction.cs         GET /api/user — returns claims
+│   ├── Models/                     ChatRequest, ChatMessage, IdeaRecord, User, etc.
+│   └── Services/
+│       ├── AuthService.cs          Base64 decode x-ms-client-principal, whitelist check
+│       ├── OpenAIService.cs        Azure OpenAI ChatAsync + ChatStreamAsync
+│       └── IdeaStorageService.cs   Azure Blob Storage container "ideas", {id}.json blobs
+├── frontend/
+│   ├── package.json                deps: vite, typescript, marked, highlight.js, idb
+│   ├── index.html                  Single div#app entry point
+│   ├── vite.config.ts              ES2022 target, Terser, port 5173
+│   ├── tsconfig.json               strict, ES2022, path alias @/* → src/*
+│   └── src/
+│       ├── main.ts                 App init, auth guard, layout, sidebar/panel events
+│       ├── components/
+│       │   ├── Chat.ts             *** CORE: state, send, stream, slash dispatch ***
+│       │   ├── Header.ts           Hamburger menu, logout, responsive text
+│       │   ├── LoginScreen.ts      Google login button, Easy Auth redirect
+│       │   ├── ConversationSidebar.ts  Pin/delete/list conversations
+│       │   ├── InfoPanel.ts        Slash command help list
+│       │   └── Message.ts          Render user/assistant/system messages
+│       ├── services/
+│       │   ├── authService.ts      getUserInfo(), logout(), redirectToLogin()
+│       │   ├── chatService.ts      sendMessage(), streamMessage() → SSE generator
+│       │   ├── conversationStorage.ts  localStorage persistence (PRIMARY)
+│       │   ├── conversationStore.ts    IndexedDB (legacy, not actively used)
+│       │   └── ideaService.ts      submitIdea(), listIdeas(), deleteIdea()
+│       ├── tools/
+│       │   ├── toolRegistry.ts     registerTool(), dispatch(), ToolHandler interface
+│       │   └── ideaTool.ts         /idea, /idea delete, /ideas commands
+│       ├── types/
+│       │   ├── chat.ts             Message, ChatState, Conversation, ConversationMetadata
+│       │   ├── auth.ts             User, AuthState, AuthError
+│       │   └── api.ts              ApiError, ApiResponse<T>, ServiceConfig
+│       ├── utils/
+│       │   ├── authGuard.ts        initAuthGuard(cb) — shows loader → auth check → cb
+│       │   ├── environment.ts      getApiBaseUrl(), getFrontendUrl()
+│       │   ├── errors.ts           AppError, AuthError, ApiError, NetworkError
+│       │   ├── tokenUtils.ts       estimateTokens(), trimMessagesToBudget()
+│       │   ├── deviceMode.ts       DeviceModeManager singleton, 768px breakpoint
+│       │   └── swipeGesture.ts     SwipeGestureHandler for mobile sidebar toggle
+│       └── styles/
+│           ├── main.css, chat.css, message.css, header.css
+│           ├── sidebar.css, info-panel.css, login.css, device-mode.css
+├── persona/analyst.md
+├── README.md
+└── .github/workflows/
+    ├── backend-deploy.yml
+    └── frontend-deploy.yml
+```
+
+---
+
+## Core Data Flow
+
+### Chat Request/Response
+
+1. User types in `Chat.ts` textarea (max 4000 chars)
+2. `handleSendMessage()` calls `trimMessagesToBudget(messages)` → max 4900 tokens
+3. System messages (`role: 'system'`) are excluded from AI payload (filtered in Chat.ts)
+4. `chatService.streamMessage(messages)` → POST `/api/chat` with `Accept: text/event-stream`
+5. Backend: decode Easy Auth header → whitelist check → forward to Azure OpenAI → stream back
+6. Frontend: parse SSE `data: {chunk: "..."}` lines → update placeholder message in real time
+7. On `[DONE]`: finalize; save conversation to localStorage
+
+### SSE Format
+
+```
+data: {"chunk":"hello"}\n\n
+data: {"chunk":" world"}\n\n
+data: [DONE]\n\n
+// On error:
+data: {"error":"CONTEXT_LENGTH_EXCEEDED"}\n\n
+```
+
+---
+
+## Key Types
+
+```typescript
+// frontend/src/types/chat.ts
+interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+}
+interface Conversation {
+  id: string;
+  title: string;
+  timestamp: Date;
+  messages: Message[];
+  pinned?: boolean;
+}
+interface ConversationMetadata {
+  id: string; title: string; timestamp: Date; messageCount: number; pinned?: boolean;
+}
+
+// frontend/src/types/auth.ts
+interface User {
+  email: string; name?: string; userId: string;
+  provider: string; isAuthenticated: boolean;
+}
+```
+
+```csharp
+// backend-csharp/Models/
+record ChatMessage(string Role, string Content);
+record ChatRequest(List<ChatMessage> Messages);
+record IdeaRecord(string Id, string Text, string Author, string AuthorEmail, DateTime Timestamp);
+```
+
+---
+
+## Backend Services
+
+### AuthService.cs
+- Decodes Base64 `x-ms-client-principal` header → `User` object
+- `ExtractUserFromHeaders(req)` → `User?`
+- `GetUserEmail(user)` → searches Claims array (standard email claim types)
+- `IsWhitelisted(email)` → checks `WHITELISTED_EMAILS` env var (comma-separated)
+- Local dev bypass: `BYPASS_AUTH_FOR_LOCAL_DEV=true` returns fake dev user
+
+### OpenAIService.cs
+- Reads `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_KEY`, `AZURE_OPENAI_DEPLOYMENT`
+- `ChatAsync(messages)` → single completion, returns string
+- `ChatStreamAsync(messages)` → `IAsyncEnumerable<string>` chunks
+- Auto-injects system prompt if no system message in request
+- `MaxOutputTokenCount = 1000`
+- Throws `"CONTEXT_LENGTH_EXCEEDED"` string on context overflow errors
+
+### IdeaStorageService.cs
+- Container: `"ideas"`, blobs named `{guid}.json`
+- `SaveIdeaAsync(text, author, email)` → returns `IdeaRecord`
+- `ListIdeasAsync()` → sorted by timestamp desc
+- `DeleteIdeaAsync(id)` → returns bool
+
+---
+
+## Frontend Services & Utilities
+
+### chatService.ts
+```typescript
+chatService.streamMessage(messages)  // async generator, yields string chunks
+chatService.sendMessage(messages)    // non-streaming, returns full string
+```
+
+### conversationStorage.ts (PRIMARY storage)
+```typescript
+ConversationStorage.createConversation(firstMsg?)  // id: conv_{ts}_{rand}
+ConversationStorage.saveConversation(conv)
+ConversationStorage.getConversation(id)
+ConversationStorage.getAllMetadata()               // sorted: pinned first, then by date
+ConversationStorage.deleteConversation(id)
+ConversationStorage.togglePin(id)
+ConversationStorage.setActiveConversation(id)
+ConversationStorage.getActiveConversationId()
+```
+
+LocalStorage keys:
+- `dadi_conversations` — full Conversation[] JSON
+- `dadi_conversations_metadata` — ConversationMetadata[] cache
+- `dadi_active_conversation` — active conversation ID string
+
+### tokenUtils.ts
+```typescript
+const TOKEN_BUDGET = {
+  MAX_INPUT_TOKENS: 6000,
+  SYSTEM_PROMPT_OVERHEAD: 100,
+  MAX_OUTPUT_TOKENS: 1000,
+  CONVERSATION_BUDGET: 4900
+};
+estimateTokens(text: string): number  // ~4 chars per token
+trimMessagesToBudget(messages, budget=4900)  // drops oldest messages first
+```
+
+### toolRegistry.ts (Slash Commands)
+```typescript
+interface ToolHandler {
+  name: string; description: string; usage: string; minArgs: number;
+  execute(args: string, context: ToolContext): Promise<void>;
+}
+interface ToolContext {
+  addSystemMessage(content: string): void;
+  setError(msg: string): void;
+}
+registerTool(handler)
+dispatch(rawInput, context)  // returns true if slash command was consumed
+```
+
+### deviceMode.ts
+```typescript
+const deviceMode = DeviceModeManager.getInstance();
+deviceMode.isMobile()   // < 768px OR (touch + < 1024px)
+deviceMode.isPC()
+deviceMode.select({ mobile: 'X', pc: 'Y' })
+deviceMode.onChange(listener)
+```
+
+---
+
+## Slash Commands
+
+| Command | Description | Shown in InfoPanel |
+|---------|-------------|-------------------|
+| `/idea <text>` | Submit idea (max 500 chars) → Azure Blob | Yes |
+| `/ideas` | List all submitted ideas | Yes |
+| `/idea delete <n>` | Delete idea by list index | No (power-user) |
+
+System messages from tool results are `role: 'system'`, styled as blue-tinted centered cards, and filtered out before sending to Azure OpenAI.
+
+---
+
+## API Endpoints
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| POST | /api/chat | Required + whitelist | Chat completions (SSE or JSON) |
+| GET | /api/user | Required | Returns user info |
+| POST | /api/ideas | Required + whitelist | Submit idea |
+| GET | /api/ideas | Required + whitelist | List ideas |
+| DELETE | /api/ideas/{id} | Required + whitelist | Delete idea |
+
+Error HTTP status codes: 400 (bad request), 401 (not authenticated), 403 (not whitelisted), 422 (context length exceeded), 503 (OpenAI not configured), 500 (server error)
+
+---
+
+## Error Handling
+
+- Backend returns HTTP 422 + `{ error: "ContextLengthExceeded" }` for OpenAI context overflow
+- SSE path writes `data: { "error": "CONTEXT_LENGTH_EXCEEDED" }` sentinel before closing
+- Frontend catches these and surfaces Norwegian user-facing messages
+- All user-facing errors are in Norwegian
+
+---
+
+## Environment Variables
+
+**Backend** (`local.settings.json` / Azure config):
+```
+AZURE_OPENAI_ENDPOINT        Azure OpenAI resource URL
+AZURE_OPENAI_KEY             API key
+AZURE_OPENAI_DEPLOYMENT      Deployment name (model)
+WHITELISTED_EMAILS           Comma-separated allowed emails
+BYPASS_AUTH_FOR_LOCAL_DEV    "true" skips auth for local dev
+AzureWebJobsStorage          Azure Storage connection string
+```
+
+**Frontend** (`.env` / Vite):
+```
+VITE_FUNCTION_APP_URL         Backend base URL (defaults to window.location.origin)
+VITE_FRONTEND_URL             Frontend URL for auth redirects
+VITE_BYPASS_AUTH_FOR_LOCAL_DEV  "true" skips auth for local dev
+```
+
+---
+
+## Component Rendering Pattern
+
+All components use vanilla JS with string templates — no framework:
+
+```typescript
+export function renderX(): string { return `<div>...</div>`; }
+export function initX(): void { /* attach event listeners */ }
+// Usage:
+element.innerHTML = renderX();
+initX();
+```
+
+For streaming updates, DOM elements are updated directly (no full re-render):
+```typescript
+const el = document.getElementById(`msg-${id}`);
+if (el) el.innerHTML = formatContent(accumulatedText);
+```
+
+---
+
+## Mobile/Desktop Responsiveness
+
+- Breakpoint: 768px (or touch + < 1024px)
+- `<body>` gets `device-mobile` or `device-pc` class
+- Sidebar and InfoPanel are mutually exclusive on mobile, independent on desktop
+- Header uses abbreviations on mobile: "Dad-I" vs "Dad Intelligence", "⎋" vs "Logg ut"
+- SwipeGestureHandler (50px threshold) handles sidebar toggle on mobile
+
+---
+
+## Dependencies
+
+**Frontend**: vite 7, typescript 5.9, marked 17, highlight.js 11, idb 8
+**Backend**: Azure.AI.OpenAI 2.1.0, Azure.Storage.Blobs 12.22.2, Azure.Identity 1.17.0, Microsoft.Azure.Functions.Worker 2.51.0
+
+---
+
+## Deployment
+
+- **Frontend**: Azure Static Web App (`$web` container) via GitHub Actions on push to master
+- **Backend**: Azure Function App (.NET 8 isolated) via GitHub Actions on push to master
+- **CORS**: host.json allows `https://dadi.z1.web.core.windows.net`, `http://localhost:3000`, `http://localhost:5173`
