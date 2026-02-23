@@ -92,6 +92,9 @@ function updateMessagesContainer(container: HTMLElement): void {
   });
 }
 
+const COPY_ICON_HTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+const CHECK_ICON_HTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
 export function initChat(): void {
   const sendButton = document.getElementById('chat-send-button');
   const input = document.getElementById('chat-input') as HTMLTextAreaElement;
@@ -116,6 +119,79 @@ export function initChat(): void {
     input.style.height = `${Math.min(input.scrollHeight, 150)}px`;
     updateCharCounter(input.value.trim().length);
   });
+
+  const messagesContainer = document.getElementById('chat-messages');
+  if (messagesContainer) {
+    // Desktop: copy button click
+    messagesContainer.addEventListener('click', (e) => {
+      const btn = (e.target as Element).closest('.message-copy-btn');
+      if (!btn) return;
+      const messageEl = btn.closest('[data-message-id]');
+      if (!messageEl) return;
+      const content = messageEl.getAttribute('data-message-content') ?? '';
+      copyMessageToClipboard(content, btn as HTMLButtonElement, null);
+    });
+
+    // Mobile: long-press to copy whole message
+    let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+
+    messagesContainer.addEventListener('touchstart', (e) => {
+      const messageEl = (e.target as Element).closest('[data-message-id]');
+      if (!messageEl) return;
+      longPressTimer = setTimeout(() => {
+        longPressTimer = null;
+        const content = messageEl.getAttribute('data-message-content') ?? '';
+        copyMessageToClipboard(content, null, messageEl as HTMLElement);
+      }, 600);
+    }, { passive: true });
+
+    const cancelLongPress = () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    };
+    messagesContainer.addEventListener('touchend', cancelLongPress, { passive: true });
+    messagesContainer.addEventListener('touchmove', cancelLongPress, { passive: true });
+  }
+}
+
+function copyMessageToClipboard(text: string, btn: HTMLButtonElement | null, messageEl: HTMLElement | null): void {
+  navigator.clipboard.writeText(text).then(() => {
+    if (btn) {
+      const original = btn.innerHTML;
+      btn.innerHTML = CHECK_ICON_HTML;
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.innerHTML = original || COPY_ICON_HTML;
+        btn.classList.remove('copied');
+      }, 2000);
+    }
+    if (messageEl) {
+      messageEl.classList.add('message-long-press-copied');
+      setTimeout(() => messageEl.classList.remove('message-long-press-copied'), 700);
+    }
+    showCopyToast();
+  }).catch(() => { /* clipboard unavailable */ });
+}
+
+function showCopyToast(): void {
+  const existing = document.querySelector('.copy-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = 'copy-toast';
+  toast.textContent = 'Kopiert!';
+  document.body.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => toast.classList.add('copy-toast--visible'));
+  });
+
+  setTimeout(() => {
+    toast.classList.remove('copy-toast--visible');
+    setTimeout(() => toast.remove(), 300);
+  }, 1500);
 }
 
 function updateCharCounter(length: number): void {
@@ -250,6 +326,9 @@ async function handleSendMessage(): Promise<void> {
       if (contentWrapper) {
         contentWrapper.classList.remove('streaming');
       }
+
+      // Update copyable content now that streaming is complete
+      messageElement.setAttribute('data-message-content', fullContent);
     }
 
     // Save conversation after successful response

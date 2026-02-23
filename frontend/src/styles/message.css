@@ -173,6 +173,76 @@
   line-height: 1.5;
 }
 
+/* Copy button */
+.message-actions {
+  display: flex;
+  padding: 0 0.25rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.message:hover .message-actions {
+  opacity: 1;
+}
+
+.message-copy-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem 0.3rem;
+  border-radius: 4px;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.message-copy-btn:hover {
+  color: #e5e7eb;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.message-copy-btn.copied {
+  color: #4ade80;
+}
+
+/* Long-press glow feedback */
+@keyframes flash-copied {
+  0%   { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+  30%  { box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.65); }
+  100% { box-shadow: 0 0 0 3px rgba(74, 222, 128, 0); }
+}
+
+.message-long-press-copied .message-content {
+  animation: flash-copied 0.7s ease-out;
+}
+
+/* Copy toast */
+.copy-toast {
+  position: fixed;
+  bottom: 5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  background: #374151;
+  color: #e5e7eb;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+  z-index: 1000;
+  border: 1px solid #4b5563;
+  white-space: nowrap;
+}
+
+.copy-toast--visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 /* Mobile layout: show labels above messages, hide avatars */
 @media (max-width: 768px) {
   .message-avatar {
@@ -199,5 +269,10 @@
   .message-assistant {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  /* Always show copy button on touch devices (no hover available) */
+  .message-actions {
+    opacity: 1;
   }
 }
