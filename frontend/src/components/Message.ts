@@ -4,8 +4,9 @@ export function renderMessage(message: Message): string {
   if (message.role === 'system') {
     return `
     <div class="message message-system" data-message-id="${message.id}">
-      <div class="message-content message-system-content">
-        ${formatContent(message.content)}
+      <div class="message-avatar message-system-avatar">AI</div>
+      <div class="message-content-wrapper">
+        <div class="message-content message-system-content">${formatContent(message.content)}</div>
       </div>
     </div>
   `;

@@ -44,7 +44,8 @@
   align-items: flex-end;
 }
 
-.message-assistant .message-content-wrapper {
+.message-assistant .message-content-wrapper,
+.message-system .message-content-wrapper {
   align-items: flex-start;
 }
 
@@ -153,15 +154,20 @@
 }
 
 .message-system {
-  justify-content: center;
+  flex-direction: row;
+}
+
+.message-system-avatar {
+  background: linear-gradient(135deg, #1d4ed8 0%, #0891b2 100%);
+  font-size: 0.8rem;
+  font-style: italic;
 }
 
 .message-system-content {
-  max-width: 90%;
-  padding: 0.6rem 1rem;
   background-color: #1a2535;
   border: 1px solid #2d4a6e;
-  border-radius: 8px;
+  border-radius: 12px;
+  border-bottom-left-radius: 4px;
   color: #93c5fd;
   font-size: 0.875rem;
   line-height: 1.5;
