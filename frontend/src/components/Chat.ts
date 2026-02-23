@@ -386,8 +386,11 @@ function updateUI(): void {
   const inputContainer = document.querySelector('.chat-input-container');
 
   if (messagesContainer) {
+    const wasAtBottom = Math.abs(messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight) < 50;
     updateMessagesContainer(messagesContainer);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    if (wasAtBottom) {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
   }
 
   if (inputContainer) {

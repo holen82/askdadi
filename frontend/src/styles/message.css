@@ -207,6 +207,11 @@
   color: #4ade80;
 }
 
+/* Hide copy button on mobile — use long-press instead */
+.device-mobile .message-copy-btn {
+  display: none;
+}
+
 /* Long-press glow feedback */
 @keyframes flash-copied {
   0%   { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
@@ -271,8 +276,4 @@
     align-items: flex-start;
   }
 
-  /* Always show copy button on touch devices (no hover available) */
-  .message-actions {
-    opacity: 1;
-  }
 }

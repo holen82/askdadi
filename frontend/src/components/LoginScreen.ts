@@ -8,7 +8,7 @@ export function renderLoginScreen(): string {
   return `
     <div class="login-screen">
       <div class="login-container">
-        <h1 class="login-title">DadI</h1>
+        <h1 class="login-title">Dad-I</h1>
         <p class="login-description">Dad Intelligence</p>
         <button id="login-button" class="login-button">
           <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
