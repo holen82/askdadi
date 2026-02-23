@@ -67,7 +67,8 @@
   overflow-wrap: break-word;
   white-space: pre-wrap;
   min-width: 0;
-  overflow: hidden;
+  max-width: 100%;
+  overflow: visible;
   transition: height 0.1s ease-out;
   will-change: contents;
 }
@@ -121,6 +122,7 @@
   border-radius: 6px;
   overflow-x: auto;
   max-width: 100%;
+  white-space: pre;
   margin: 0.5rem 0;
   border: 1px solid #374151;
 }
