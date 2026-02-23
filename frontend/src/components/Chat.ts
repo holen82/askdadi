@@ -339,6 +339,21 @@ async function handleSendMessage(): Promise<void> {
       // Notify sidebar to update
       window.dispatchEvent(new CustomEvent('conversation-updated'));
     }
+
+    // Generate AI title after first exchange (fire-and-forget)
+    const nonSystemMessages = state.messages.filter(m => m.role !== 'system');
+    const isFirstExchange = nonSystemMessages.length === 2
+      && nonSystemMessages[0].role === 'user'
+      && nonSystemMessages[1].role === 'assistant';
+
+    if (isFirstExchange && currentConversation) {
+      const conv = currentConversation;
+      chatService.generateTitle(nonSystemMessages[0].content, fullContent).then(title => {
+        conv.title = title;
+        ConversationStorage.saveConversation(conv);
+        window.dispatchEvent(new CustomEvent('conversation-updated'));
+      }).catch(() => { /* keep existing truncated title */ });
+    }
   } catch (error) {
     console.error('Failed to send message:', error);
     state.error = error instanceof Error ? error.message : 'Failed to send message';

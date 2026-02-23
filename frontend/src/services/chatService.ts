@@ -77,6 +77,13 @@ class ChatService {
     }
   }
 
+  async generateTitle(userMessage: string, assistantMessage: string): Promise<string> {
+    const prompt = `Give a short title (3-5 words, no quotes) for a conversation starting with:\nUser: ${userMessage.slice(0, 200)}\nAssistant: ${assistantMessage.slice(0, 200)}`;
+    const response = await this.sendMessage([{ role: 'user', content: prompt }]);
+    const title = response.trim().replace(/^["']+|["']+$/g, '').slice(0, 60);
+    return title || userMessage.slice(0, 50);
+  }
+
   async *streamMessage(messages: ChatMessage[]): AsyncGenerator<string, void, unknown> {
     try {
       const bypassAuth = import.meta.env.VITE_BYPASS_AUTH_FOR_LOCAL_DEV === 'true';
