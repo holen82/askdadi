@@ -53,7 +53,13 @@ public class OpenAIService
         }
     }
 
-    public async Task<string> ChatAsync(Models.ChatMessage[] messages)
+    private static string GetSystemPrompt(string chatMode) => chatMode switch
+    {
+        "normal" => "Du er Dad-I, en hjelpsom AI-assistent. Gi klare, presise og nyttige svar på norsk. Hold svar korte med mindre du blir spurt om noe annet.",
+        _ => "Du er Dad-I, en AI-assistent for ungdom i Norge. Svar på en vennlig, uformell og engasjerende måte – bruk gjerne norsk ungdomsspråk og slang der det faller naturlig. Vær hjelpsom, tydelig og hold deg til poenget, men ha det litt gøy med en og annen tørr pappavits!"
+    };
+
+    public async Task<string> ChatAsync(Models.ChatMessage[] messages, string chatMode = "fun")
     {
         if (_client == null)
         {
@@ -72,7 +78,7 @@ public class OpenAIService
 
             if (!chatMessages.Any(m => m is SystemChatMessage))
             {
-                chatMessages.Insert(0, new SystemChatMessage("You are Dadi, a helpful AI assistant. Provide clear, concise, and accurate responses."));
+                chatMessages.Insert(0, new SystemChatMessage(GetSystemPrompt(chatMode)));
             }
 
             var options = new ChatCompletionOptions
@@ -123,7 +129,7 @@ public class OpenAIService
             || msg.Contains("maximum context length", StringComparison.OrdinalIgnoreCase);
     }
 
-    public async IAsyncEnumerable<string> ChatStreamAsync(Models.ChatMessage[] messages)
+    public async IAsyncEnumerable<string> ChatStreamAsync(Models.ChatMessage[] messages, string chatMode = "fun")
     {
         if (_client == null)
         {
@@ -140,7 +146,7 @@ public class OpenAIService
 
         if (!chatMessages.Any(m => m is SystemChatMessage))
         {
-            chatMessages.Insert(0, new SystemChatMessage("You are Dadi, a helpful AI assistant. Provide clear, concise, and accurate responses."));
+            chatMessages.Insert(0, new SystemChatMessage(GetSystemPrompt(chatMode)));
         }
 
         var options = new ChatCompletionOptions

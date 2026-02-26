@@ -14,6 +14,7 @@ var host = new HostBuilder()
         services.AddSingleton<AuthService>();
         services.AddSingleton<OpenAIService>();
         services.AddSingleton<IdeaStorageService>();
+        services.AddSingleton<UserPreferencesService>();
     })
     .Build();
 

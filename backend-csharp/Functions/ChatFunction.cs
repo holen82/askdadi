@@ -15,15 +15,18 @@ public class ChatFunction
     private readonly ILogger<ChatFunction> _logger;
     private readonly AuthService _authService;
     private readonly OpenAIService _openAIService;
+    private readonly UserPreferencesService _userPreferencesService;
 
     public ChatFunction(
-        ILogger<ChatFunction> logger, 
+        ILogger<ChatFunction> logger,
         AuthService authService,
-        OpenAIService openAIService)
+        OpenAIService openAIService,
+        UserPreferencesService userPreferencesService)
     {
         _logger = logger;
         _authService = authService;
         _openAIService = openAIService;
+        _userPreferencesService = userPreferencesService;
     }
 
     [Function("chat")]
@@ -59,6 +62,10 @@ public class ChatFunction
             });
             return forbiddenResponse;
         }
+
+        string chatMode;
+        try { chatMode = (await _userPreferencesService.GetPreferencesAsync(user.UserId)).ChatMode; }
+        catch (Exception ex) { _logger.LogWarning(ex, "Pref fetch failed, defaulting to fun"); chatMode = "fun"; }
 
         ChatRequest? chatRequest;
         try
@@ -111,10 +118,10 @@ public class ChatFunction
             var acceptHeader = req.Headers.GetValues("Accept").FirstOrDefault() ?? "";
             if (acceptHeader.Contains("text/event-stream"))
             {
-                return await StreamChatResponse(req, chatRequest.Messages);
+                return await StreamChatResponse(req, chatRequest.Messages, chatMode);
             }
 
-            var response = await _openAIService.ChatAsync(chatRequest.Messages);
+            var response = await _openAIService.ChatAsync(chatRequest.Messages, chatMode);
 
             _logger.LogInformation("Chat response generated successfully");
 
@@ -150,7 +157,7 @@ public class ChatFunction
         }
     }
 
-    private async Task<HttpResponseData> StreamChatResponse(HttpRequestData req, Models.ChatMessage[] messages)
+    private async Task<HttpResponseData> StreamChatResponse(HttpRequestData req, Models.ChatMessage[] messages, string chatMode)
     {
         var response = req.CreateResponse();
         response.StatusCode = System.Net.HttpStatusCode.OK;
@@ -163,7 +170,7 @@ public class ChatFunction
             var bodyStream = response.Body;
             var writer = new StreamWriter(bodyStream, Encoding.UTF8, leaveOpen: false);
 
-            await foreach (var chunk in _openAIService.ChatStreamAsync(messages))
+            await foreach (var chunk in _openAIService.ChatStreamAsync(messages, chatMode))
             {
                 var sseData = $"data: {JsonSerializer.Serialize(new { chunk })}\n\n";
                 await writer.WriteAsync(sseData);

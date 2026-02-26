@@ -5,8 +5,10 @@ import { trimMessagesToBudget } from '@/utils/tokenUtils';
 import { ConversationStorage } from '@/services/conversationStorage';
 import { dispatch, type ToolContext } from '@/tools/toolRegistry';
 import { registerIdeaTools } from '@/tools/ideaTool';
+import { registerChatmodeTools } from '@/tools/chatmodeTool';
 import { deviceMode } from '@/utils/deviceMode';
 registerIdeaTools();
+registerChatmodeTools();
 
 const MAX_INPUT_CHARS = 4000;
 
