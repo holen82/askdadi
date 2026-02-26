@@ -12,7 +12,7 @@ import './styles/sidebar.css';
 import './styles/info-panel.css';
 import { initAuthGuard } from '@/utils/authGuard';
 import { renderHeader, initHeader } from '@/components/Header';
-import { renderChat, initChat, loadConversation, startNewConversation, getCurrentConversationId, initConversationFromStorage } from '@/components/Chat';
+import { renderChat, initChat, loadConversation, startNewConversation, getCurrentConversationId, initConversationFromStorage, fillChatInput, triggerSend } from '@/components/Chat';
 import { renderConversationSidebar, initConversationSidebar } from '@/components/ConversationSidebar';
 import { renderInfoPanel, initInfoPanel } from '@/components/InfoPanel';
 import { ConversationStorage } from '@/services/conversationStorage';
@@ -58,7 +58,14 @@ function initAuthenticatedApp(user: User): void {
 
   // Initialize components
   initHeader(handleToggleSidebar, handleToggleInfoPanel);
-  initInfoPanel(handleCloseInfoPanel);
+  initInfoPanel(handleCloseInfoPanel, (toolName, requiresInput) => {
+    handleCloseInfoPanel();
+    if (requiresInput) {
+      fillChatInput(`/${toolName} `);
+    } else {
+      triggerSend(`/${toolName}`);
+    }
+  });
   initChat();
   initConversationFromStorage();
   checkAndResetStaleConversation();

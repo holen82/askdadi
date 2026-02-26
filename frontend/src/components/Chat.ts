@@ -511,6 +511,21 @@ export function getCurrentConversationId(): string | null {
   return currentConversation?.id || null;
 }
 
+export function fillChatInput(text: string): void {
+  const input = document.getElementById('chat-input') as HTMLTextAreaElement;
+  if (!input) return;
+  input.value = text;
+  input.dispatchEvent(new Event('input'));
+  input.focus();
+}
+
+export function triggerSend(text: string): void {
+  const input = document.getElementById('chat-input') as HTMLTextAreaElement;
+  if (!input) return;
+  input.value = text;
+  handleSendMessage();
+}
+
 // Initialize conversation from storage on load
 export function initConversationFromStorage(): void {
   const activeId = ConversationStorage.getActiveConversationId();

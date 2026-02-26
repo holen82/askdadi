@@ -15,7 +15,7 @@ export function registerIdeaTools(): void {
   registerTool({
     name: 'idea',
     description: 'Send inn en idé eller slett en idé',
-    usage: '<tekst>  eller  delete <nummer>',
+    usage: '<tekst> eller delete <nummer>',
     minArgs: 1,
     async execute(args: string, context: ToolContext): Promise<void> {
       if (args.startsWith('delete ')) {

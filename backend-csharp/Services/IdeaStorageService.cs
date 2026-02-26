@@ -77,7 +77,7 @@ public class IdeaStorageService
             }
         }
 
-        return ideas.OrderByDescending(r => r.Timestamp).ToArray();
+        return ideas.OrderBy(r => r.Timestamp).ToArray();
     }
 
     public async Task<bool> DeleteIdeaAsync(string id, CancellationToken cancellationToken = default)
