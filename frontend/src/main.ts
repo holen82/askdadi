@@ -93,6 +93,32 @@ function initAuthenticatedApp(user: User): void {
     });
   }
 
+  // Swipe left on conversation panel to close it
+  const sidebarEl = document.getElementById('conversation-sidebar');
+  if (sidebarEl) {
+    new SwipeGestureHandler({
+      element: sidebarEl,
+      onSwipeLeft: () => {
+        if (window.innerWidth <= 768 && sidebarOpen) handleCloseSidebar();
+      },
+      onSwipeRight: () => {},
+      threshold: 50
+    });
+  }
+
+  // Swipe right on info panel to close it
+  const infoPanelEl = document.getElementById('info-panel');
+  if (infoPanelEl) {
+    new SwipeGestureHandler({
+      element: infoPanelEl,
+      onSwipeRight: () => {
+        if (window.innerWidth <= 768 && infoPanelOpen) handleCloseInfoPanel();
+      },
+      onSwipeLeft: () => {},
+      threshold: 50
+    });
+  }
+
   // Backdrop click to close on mobile
   const backdrop = document.getElementById('sidebar-backdrop');
   if (backdrop) {
