@@ -305,8 +305,15 @@ function updateSidebar(): void {
   );
 }
 
-// Set viewport height CSS variable for mobile browsers
+// Set viewport height CSS variable for mobile browsers.
+// Only recalculate when the viewport WIDTH changes (orientation change).
+// Keyboard open/close changes only the height — we intentionally ignore that
+// so the app layout doesn't compress when the soft keyboard appears.
+let _lastVhWidth = -1;
 function setViewportHeight(): void {
+  const currentWidth = window.innerWidth;
+  if (currentWidth === _lastVhWidth) return;
+  _lastVhWidth = currentWidth;
   const vh = window.innerHeight * 0.01;
   document.documentElement.style.setProperty('--vh', `${vh}px`);
 }
@@ -316,10 +323,15 @@ async function initApp(): Promise<void> {
   // Initialize debug mode first to capture all errors
   initDebugMode();
 
-  // Set viewport height for mobile browsers
+  // Set initial viewport height, then only update on orientation/width changes
+  _lastVhWidth = -1; // force first call to set the variable
   setViewportHeight();
   window.addEventListener('resize', setViewportHeight);
-  window.addEventListener('orientationchange', setViewportHeight);
+  window.addEventListener('orientationchange', () => {
+    // On orientation change, reset the width tracker so the next resize
+    // (which fires with settled dimensions) always updates --vh.
+    _lastVhWidth = -1;
+  });
 
   await initAuthGuard(initAuthenticatedApp);
 }

@@ -121,6 +121,21 @@ export function initChat(): void {
     updateCharCounter(input.value.trim().length);
   });
 
+  // Mobile: keep input bar visible above soft keyboard.
+  // On iOS the layout viewport doesn't shrink when the keyboard opens,
+  // so we use the Visual Viewport API to measure keyboard height and
+  // push the fixed bar up accordingly.
+  if (deviceMode.isMobile() && window.visualViewport) {
+    const vv = window.visualViewport;
+    const updateInputBottom = () => {
+      const el = document.querySelector('.chat-input-container') as HTMLElement | null;
+      if (!el) return;
+      const keyboardHeight = window.innerHeight - vv.offsetTop - vv.height;
+      el.style.bottom = `${Math.max(0, keyboardHeight)}px`;
+    };
+    vv.addEventListener('resize', updateInputBottom);
+  }
+
   const messagesContainer = document.getElementById('chat-messages');
   if (messagesContainer) {
     // Desktop: copy button click
