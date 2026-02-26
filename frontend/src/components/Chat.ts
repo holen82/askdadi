@@ -5,6 +5,7 @@ import { trimMessagesToBudget } from '@/utils/tokenUtils';
 import { ConversationStorage } from '@/services/conversationStorage';
 import { dispatch, type ToolContext } from '@/tools/toolRegistry';
 import { registerIdeaTools } from '@/tools/ideaTool';
+import { deviceMode } from '@/utils/deviceMode';
 registerIdeaTools();
 
 const MAX_INPUT_CHARS = 4000;
@@ -268,6 +269,19 @@ async function handleSendMessage(): Promise<void> {
 
   updateUI();
 
+  // Mobile: scroll the user's question to the top of the chat
+  if (deviceMode.isMobile()) {
+    requestAnimationFrame(() => {
+      const userMsgEl = document.querySelector(
+        `[data-message-id="${userMessage.id}"]`
+      ) as HTMLElement | null;
+      const scrollContainer = document.getElementById('chat-messages');
+      if (userMsgEl && scrollContainer) {
+        scrollContainer.scrollTop = userMsgEl.offsetTop;
+      }
+    });
+  }
+
   // Create assistant message placeholder
   const assistantMessageId = generateId();
   const assistantMessage: Message = {
@@ -314,8 +328,8 @@ async function handleSendMessage(): Promise<void> {
 
           contentWrapper.innerHTML = formatContent(fullContent);
 
-          // Only scroll if user was already at bottom
-          if (wasAtBottom && scrollContainer) {
+          // Only scroll if user was already at bottom — PC only
+          if (!deviceMode.isMobile() && wasAtBottom && scrollContainer) {
             requestAnimationFrame(() => {
               scrollContainer.scrollTop = scrollContainer.scrollHeight;
             });
@@ -367,10 +381,10 @@ async function handleSendMessage(): Promise<void> {
     state.isLoading = false;
     updateUI();
 
-    // Focus the input after response is complete
-    const inputEl = document.getElementById('chat-input') as HTMLTextAreaElement;
-    if (inputEl) {
-      inputEl.focus();
+    // Re-focus input on PC only — on mobile this triggers the soft keyboard
+    if (!deviceMode.isMobile()) {
+      const inputEl = document.getElementById('chat-input') as HTMLTextAreaElement;
+      if (inputEl) inputEl.focus();
     }
   }
 }
@@ -403,7 +417,7 @@ function updateUI(): void {
   if (messagesContainer) {
     const wasAtBottom = Math.abs(messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight) < 50;
     updateMessagesContainer(messagesContainer);
-    if (wasAtBottom) {
+    if (!deviceMode.isMobile() && wasAtBottom) {
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
   }
@@ -470,9 +484,9 @@ export function startNewConversation(): void {
   ConversationStorage.clearActiveConversation();
   updateUI();
 
-  const input = document.getElementById('chat-input') as HTMLTextAreaElement;
-  if (input) {
-    input.focus();
+  if (!deviceMode.isMobile()) {
+    const input = document.getElementById('chat-input') as HTMLTextAreaElement;
+    if (input) input.focus();
   }
 }
 
