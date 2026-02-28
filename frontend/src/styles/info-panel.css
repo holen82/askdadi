@@ -89,6 +89,7 @@
     height: 100%;
     flex-shrink: 0;
     scroll-snap-align: start;
+    scroll-snap-stop: always;
     order: 3;
     overflow-y: auto;
     border-right: none;
