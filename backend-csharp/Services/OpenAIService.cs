@@ -1,3 +1,5 @@
+using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using OpenAI;
 using OpenAI.Chat;
@@ -173,5 +175,121 @@ public class OpenAIService
     public bool IsConfigured()
     {
         return _client != null;
+    }
+
+    private const string PlanSystemPrompt =
+        "You are a senior software architect reviewing a full-stack application: " +
+        "a C# Azure Functions (.NET 8 isolated worker) backend and a vanilla TypeScript frontend (Vite). " +
+        "Create a precise, actionable, step-by-step implementation plan for the given GitHub issue. " +
+        "Name exact files, classes, methods, and signatures for both backend and frontend as applicable. " +
+        "List NuGet packages and config changes needed. " +
+        "Under 1500 words, Markdown numbered steps. No actual code — that comes in a separate step.";
+
+    private const string CodeGenSystemPrompt =
+        "You are a senior software engineer implementing changes in a full-stack application: " +
+        "a C# Azure Functions (.NET 8 isolated worker) backend and a vanilla TypeScript frontend (Vite). " +
+        "Given an implementation plan and the existing source files, produce the complete updated file contents. " +
+        "Return ONLY a valid JSON object with this exact structure:\n" +
+        "{\"summary\": \"Short description\", \"fileChanges\": {\"path/to/file\": \"complete file content\"}}\n" +
+        "Include only files that need to be created or modified. Paths must be relative to the repository root. " +
+        "Do not include markdown code fences or any text outside the JSON object.";
+
+    private static string BuildSourceContext(string issueTitle, string issueBody, List<Models.SourceFile> sourceFiles)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"## Issue: {issueTitle}");
+        sb.AppendLine();
+        if (!string.IsNullOrEmpty(issueBody))
+        {
+            sb.AppendLine(issueBody);
+            sb.AppendLine();
+        }
+        sb.AppendLine("## Source Files");
+        foreach (var file in sourceFiles)
+        {
+            sb.AppendLine($"### {file.Path}");
+            sb.AppendLine("```");
+            sb.AppendLine(file.Content);
+            sb.AppendLine("```");
+            sb.AppendLine();
+        }
+        return sb.ToString();
+    }
+
+    public async Task<string> GenerateImplementationPlanAsync(
+        string issueTitle,
+        string issueBody,
+        List<Models.SourceFile> sourceFiles,
+        CancellationToken ct = default)
+    {
+        if (_client == null)
+            throw new InvalidOperationException("ChatClient not initialized. Check your configuration.");
+
+        var messages = new List<ChatMessage>
+        {
+            new SystemChatMessage(PlanSystemPrompt),
+            new UserChatMessage(BuildSourceContext(issueTitle, issueBody, sourceFiles))
+        };
+
+        var options = new ChatCompletionOptions
+        {
+            MaxOutputTokenCount = 4000,
+        };
+
+        try
+        {
+            var completion = await _client.CompleteChatAsync(messages, options, ct);
+            return completion.Value.Content[0].Text ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "OpenAI error during plan generation for issue: {Title}", issueTitle);
+            if (IsContextLengthError(ex))
+                throw new InvalidOperationException("CONTEXT_LENGTH_EXCEEDED", ex);
+            throw;
+        }
+    }
+
+    public async Task<Models.AiCodeChangesResponse> GenerateCodeChangesAsync(
+        string issueTitle,
+        string issueBody,
+        string plan,
+        List<Models.SourceFile> sourceFiles,
+        CancellationToken ct = default)
+    {
+        if (_client == null)
+            throw new InvalidOperationException("ChatClient not initialized. Check your configuration.");
+
+        var userContent = new StringBuilder(BuildSourceContext(issueTitle, issueBody, sourceFiles));
+        userContent.AppendLine("## Implementation Plan");
+        userContent.AppendLine(plan);
+
+        var messages = new List<ChatMessage>
+        {
+            new SystemChatMessage(CodeGenSystemPrompt),
+            new UserChatMessage(userContent.ToString())
+        };
+
+        var options = new ChatCompletionOptions
+        {
+            MaxOutputTokenCount = 8000,
+        };
+
+        try
+        {
+            var completion = await _client.CompleteChatAsync(messages, options, ct);
+            var json = completion.Value.Content[0].Text ?? "{}";
+            return JsonSerializer.Deserialize<Models.AiCodeChangesResponse>(
+                json,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                ?? new Models.AiCodeChangesResponse();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "OpenAI error during code generation for issue: {Title}", issueTitle);
+            if (IsContextLengthError(ex))
+                throw new InvalidOperationException("CONTEXT_LENGTH_EXCEEDED", ex);
+            throw;
+        }
     }
 }

@@ -16,6 +16,7 @@ var host = new HostBuilder()
         services.AddSingleton<IdeaStorageService>();
         services.AddSingleton<UserPreferencesService>();
         services.AddSingleton<GitHubService>();
+        services.AddSingleton<AutoResolveService>();
     })
     .Build();
 

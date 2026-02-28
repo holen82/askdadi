@@ -3,7 +3,6 @@ using System.Text.Json;
 using DadiChatBot.Models;
 using DadiChatBot.Services;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
