@@ -192,7 +192,13 @@ public class OpenAIService
         "Return ONLY a valid JSON object with this exact structure:\n" +
         "{\"summary\": \"Short description\", \"fileChanges\": {\"path/to/file\": \"complete file content\"}}\n" +
         "Include only files that need to be created or modified. Paths must be relative to the repository root. " +
-        "Do not include markdown code fences or any text outside the JSON object.";
+        "Do not include markdown code fences or any text outside the JSON object.\n" +
+        "CRITICAL: Every file in fileChanges MUST contain the ENTIRE file content — every single line, from the first to the last. " +
+        "NEVER truncate, abbreviate, or omit any part of a file. " +
+        "NEVER use placeholder comments such as '// rest of file unchanged', '// existing code here', " +
+        "'// ... (rest stays the same)', '/* unchanged */', or any similar shorthand. " +
+        "The content you return will be written directly to disk as-is, so a truncated file will break the application. " +
+        "If a file is large, you must still output every line in full.";
 
     private static string BuildSourceContext(string issueTitle, string issueBody, List<Models.SourceFile> sourceFiles)
     {
