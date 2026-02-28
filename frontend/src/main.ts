@@ -1,7 +1,3 @@
-/**
- * Main application entry point
- */
-
 import './styles/main.css';
 import './styles/device-mode.css';
 import './styles/login.css';
@@ -10,6 +6,7 @@ import './styles/chat.css';
 import './styles/message.css';
 import './styles/sidebar.css';
 import './styles/info-panel.css';
+import './styles/confirm-dialog.css';
 import { initAuthGuard } from '@/utils/authGuard';
 import { renderHeader, initHeader } from '@/components/Header';
 import { renderChat, initChat, loadConversation, startNewConversation, getCurrentConversationId, initConversationFromStorage, fillChatInput, triggerSend } from '@/components/Chat';

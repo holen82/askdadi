@@ -1,4 +1,5 @@
 import type { ConversationMetadata } from '@/types/chat';
+import { confirmDialog } from '@/components/ConfirmDialog';
 
 const PIN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
   viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -124,7 +125,7 @@ function escapeHtml(unsafe: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
 
@@ -169,7 +170,6 @@ export function initConversationSidebar(
 
     document.body.appendChild(menu);
 
-    // Clamp position to viewport
     const menuWidth = 180;
     const menuHeight = 96;
     let left = x;
@@ -181,7 +181,7 @@ export function initConversationSidebar(
     menu.style.left = `${left}px`;
     menu.style.top = `${top}px`;
 
-    menu.addEventListener('click', (e) => {
+    menu.addEventListener('click', async (e) => {
       const btn = (e.target as HTMLElement).closest('[data-menu-action]') as HTMLElement | null;
       if (!btn) return;
       menu.remove();
@@ -189,13 +189,17 @@ export function initConversationSidebar(
       if (btn.dataset.menuAction === 'pin') {
         onPinConversation(menuId);
       } else if (btn.dataset.menuAction === 'delete') {
-        if (confirm('Slett denne samtalen?')) {
-          onDeleteConversation(menuId);
-        }
+        const confirmed = await confirmDialog({
+          title: 'Slett samtale',
+          message: 'Er du sikker på at du vil slette denne samtalen? Dette kan ikke angres.',
+          confirmText: 'Slett',
+          cancelText: 'Avbryt',
+          destructive: true
+        });
+        if (confirmed) onDeleteConversation(menuId);
       }
     });
 
-    // Dismiss on outside interaction
     const dismiss = (e: Event) => {
       if (!menu.contains(e.target as Node)) {
         menu.remove();
@@ -216,7 +220,6 @@ export function initConversationSidebar(
     }
   }
 
-  // Touch: long press (mobile)
   sidebar.addEventListener('touchstart', (e) => {
     const conv = getConvItem(e.target);
     if (!conv) return;
@@ -238,7 +241,6 @@ export function initConversationSidebar(
   sidebar.addEventListener('touchend', cancelLongPress, { passive: true });
   sidebar.addEventListener('touchcancel', cancelLongPress, { passive: true });
 
-  // Mouse: long press + right-click (desktop)
   sidebar.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
     const conv = getConvItem(e.target);
@@ -261,7 +263,6 @@ export function initConversationSidebar(
     openContextMenu(conv.id, conv.isPinned, e.clientX, e.clientY);
   });
 
-  // Regular click
   sidebar.addEventListener('click', (e) => {
     if (suppressNextClick) {
       suppressNextClick = false;

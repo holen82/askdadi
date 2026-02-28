@@ -1,10 +1,7 @@
-/**
- * Header component with logout button
- */
-
 import { logout } from '@/services/authService';
 import { deviceMode, modeClasses } from '@/utils/deviceMode';
 import type { User } from '@/types/auth';
+import { confirmDialog } from '@/components/ConfirmDialog';
 
 export function renderHeader(user: User): string {
   return `
@@ -63,20 +60,17 @@ export function initHeader(onToggleSidebar?: () => void, onToggleInfoPanel?: () 
   const infoMenuItem = document.getElementById('info-menu-item');
 
   if (menuButton && menuDropdown) {
-    // Toggle menu dropdown
     menuButton.addEventListener('click', (e) => {
       e.stopPropagation();
       menuDropdown.classList.toggle('visible');
     }, { signal });
 
-    // Close menu when clicking outside
     document.addEventListener('click', (e) => {
       if (!menuButton.contains(e.target as Node) && !menuDropdown.contains(e.target as Node)) {
         menuDropdown.classList.remove('visible');
       }
     }, { signal });
 
-    // Handle conversations menu item click
     if (conversationsMenuItem && onToggleSidebar) {
       conversationsMenuItem.addEventListener('click', () => {
         menuDropdown.classList.remove('visible');
@@ -84,7 +78,6 @@ export function initHeader(onToggleSidebar?: () => void, onToggleInfoPanel?: () 
       }, { signal });
     }
 
-    // Handle info menu item click
     if (infoMenuItem && onToggleInfoPanel) {
       infoMenuItem.addEventListener('click', () => {
         menuDropdown.classList.remove('visible');
@@ -94,10 +87,14 @@ export function initHeader(onToggleSidebar?: () => void, onToggleInfoPanel?: () 
   }
 }
 
-function handleLogout(): void {
-  if (confirm('Er du sikker på at du vil logge ut?')) {
-    logout();
-  }
+async function handleLogout(): Promise<void> {
+  const confirmed = await confirmDialog({
+    title: 'Logg ut',
+    message: 'Er du sikker på at du vil logge ut?',
+    confirmText: 'Logg ut',
+    cancelText: 'Avbryt'
+  });
+  if (confirmed) logout();
 }
 
 function escapeHtml(unsafe: string): string {
@@ -105,6 +102,6 @@ function escapeHtml(unsafe: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
