@@ -45,14 +45,17 @@ function scrollToPanel(panel: 'sidebar' | 'chat' | 'info', instant = false): voi
 function initMobileCarousel(): void {
   if (window.innerWidth > 768) return;
 
-  // Start on chat panel instantly (no animation)
-  scrollToPanel('chat', true);
   sidebarOpen = false;
   infoPanelOpen = false;
   setMobilePanelClass('chat');
 
   const container = document.querySelector('.app-container') as HTMLElement;
   if (!container) return;
+
+  // Snap to chat panel after the first layout pass so scrollLeft takes effect
+  requestAnimationFrame(() => {
+    scrollToPanel('chat', true);
+  });
 
   container.addEventListener('scroll', () => {
     if (window.innerWidth > 768) return;
