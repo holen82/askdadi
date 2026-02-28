@@ -4,19 +4,29 @@ A secure, Azure-hosted AI chatbot application with Google OAuth authentication a
 
 ## Features
 
-- 🔐 **Google OAuth Authentication** - Secure login via Azure Easy Auth
-- 👥 **Whitelist-based Access** - Control who can use the application
-- 🤖 **Azure OpenAI Integration** - Powered by GPT models
-- 💬 **Modern Chat Interface** - Clean, responsive UI with message formatting
-- ☁️ **Fully Cloud-hosted** - Azure Storage + C# Function App
-- 🚀 **Auto-deployment** - GitHub Actions CI/CD pipeline
+- **Google OAuth Authentication** - Secure login via Azure Easy Auth
+- **Whitelist-based Access** - Control who can use the application
+- **Azure OpenAI Integration** - Powered by GPT models
+- **Chat Modes** - Switch between `fun` and `normal` personality modes (per-user, persisted)
+- **Conversation History** - Browse, pin, and delete past conversations (stored in-browser)
+- **Slash Commands** - Built-in tool framework with `/idea`, `/ideas`, `/issue`, `/chatmode`
+- **Idea Bank** - Submit and list ideas stored in Azure Blob Storage
+- **GitHub Issue Creation** - Create GitHub issues directly from chat with `/issue`
+- **AI Auto-Resolve** - Nightly timer that automatically resolves GitHub issues by generating code and opening PRs
+- **Mobile-Responsive UI** - Carousel-style panel navigation on mobile devices
+- **PWA Support** - Installable as a Progressive Web App via service worker
+- **Modern Chat Interface** - Clean, responsive UI with markdown rendering and syntax highlighting
+- **Fully Cloud-hosted** - Azure Storage + C# Function App
+- **Auto-deployment** - GitHub Actions CI/CD pipeline
 
 ## Architecture
 
 - **Frontend**: TypeScript + Vite + Vanilla TS → Azure Storage Static Website
-- **Backend**: C# Azure Functions (.NET 8) → Azure Function App
+- **Backend**: C# Azure Functions (.NET 8 isolated worker) → Azure Function App
+- **Storage**: Azure Blob Storage (ideas, user preferences)
 - **AI**: Azure OpenAI Service
 - **Auth**: Azure Easy Auth on Function App (Google)
+- **GitHub Integration**: GitHub API (issue creation, auto-resolve PRs)
 - **Deployment**: Separate GitHub Actions workflows
 
 ## Quick Start
@@ -44,6 +54,8 @@ A secure, Azure-hosted AI chatbot application with Google OAuth authentication a
      - `AZURE_OPENAI_DEPLOYMENT`
      - `WHITELISTED_EMAILS`
      - `ALLOWED_ORIGINS` (include Storage static website URL)
+     - `AzureWebJobsStorage` (Azure Storage connection string for ideas/preferences)
+     - `GITHUB_TOKEN` (GitHub personal access token for issue creation and auto-resolve)
 
 3. **Configure Easy Auth**
    - Enable Authentication on Function App
@@ -74,17 +86,19 @@ A secure, Azure-hosted AI chatbot application with Google OAuth authentication a
 dadi/
 ├── frontend/              # Frontend application (Vanilla TS)
 │   ├── src/
-│   │   ├── components/    # UI components (Header, Chat, Message)
-│   │   ├── services/      # API services (chat, user, auth)
+│   │   ├── components/    # UI components (Header, Chat, Message, ConversationSidebar, InfoPanel, ConfirmDialog, LoginScreen)
+│   │   ├── services/      # API services (chat, user, auth, chatmode, idea, conversationStorage, conversationStore)
 │   │   ├── styles/        # CSS stylesheets
+│   │   ├── tools/         # Slash command tools (idea, issue, chatmode, toolRegistry)
 │   │   ├── types/         # TypeScript type definitions
-│   │   └── utils/         # Utility functions
+│   │   └── utils/         # Utility functions (authGuard, deviceMode, debugMode, errors, tokenUtils)
 │   └── public/            # Static assets
 ├── backend-csharp/        # C# Azure Functions backend
-│   ├── Functions/         # HTTP trigger functions (User, Chat)
+│   ├── Functions/         # HTTP/timer trigger functions (User, Chat, Idea, Issue, UserPreferences, AutoResolve)
 │   ├── Models/            # Data models
-│   ├── Services/          # Business logic (Auth, OpenAI)
+│   ├── Services/          # Business logic (Auth, OpenAI, IdeaStorage, UserPreferences, GitHub, AutoResolve)
 │   └── Utils/             # Utility functions
+├── persona/               # AI persona definitions
 ├── docs/                  # Documentation
 └── .github/workflows/     # GitHub Actions CI/CD
 ```
@@ -112,20 +126,44 @@ func start        # Start Azure Functions locally (port 7071)
 **Frontend (.env.development):**
 ```
 VITE_FUNCTION_APP_URL=http://localhost:7071
+VITE_BYPASS_AUTH_FOR_LOCAL_DEV=true
 ```
 
 **Backend (local.settings.json):**
 ```json
 {
   "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
     "AZURE_OPENAI_ENDPOINT": "https://your-openai.openai.azure.com/",
     "AZURE_OPENAI_KEY": "your-key",
     "AZURE_OPENAI_DEPLOYMENT": "chat",
     "WHITELISTED_EMAILS": "user1@example.com,user2@example.com",
-    "ALLOWED_ORIGINS": "http://localhost:5173"
+    "BYPASS_AUTH_FOR_LOCAL_DEV": "true",
+    "GITHUB_TOKEN": "your-github-pat-here"
   }
 }
 ```
+
+## Slash Commands
+
+| Command | Description |
+|---|---|
+| `/idea <text>` | Submit an idea (max 500 chars) |
+| `/idea delete <n>` | Delete idea number `n` from the list |
+| `/ideas` | List all submitted ideas |
+| `/issue <title>` | Create a GitHub issue (max 256 chars) |
+| `/chatmode` | Show current chat mode |
+| `/chatmode fun\|normal` | Change chat mode |
+
+## Auto-Resolve
+
+The `AutoResolve` timer function runs daily at 02:00 UTC. It:
+1. Fetches open GitHub issues labelled `from-chat` that do not yet have the `autoresolve` label
+2. Uses Azure OpenAI to generate an implementation plan and code changes
+3. Commits the changes to a new branch and opens a pull request that closes the issue
+
+Requires `GITHUB_TOKEN` with `repo` scope and `AZURE_OPENAI_*` variables to be configured.
 
 ## Security
 
