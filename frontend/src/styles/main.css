@@ -41,6 +41,16 @@ body {
   overflow: hidden;
 }
 
+@media (max-width: 768px) {
+  .app-container {
+    overflow-x: scroll;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+}
+
 .app-main {
   flex: 1;
   overflow: hidden;

@@ -16,13 +16,63 @@ import { renderChat, initChat, loadConversation, startNewConversation, getCurren
 import { renderConversationSidebar, initConversationSidebar } from '@/components/ConversationSidebar';
 import { renderInfoPanel, initInfoPanel } from '@/components/InfoPanel';
 import { ConversationStorage } from '@/services/conversationStorage';
-import { SwipeGestureHandler } from '@/utils/swipeGesture';
 import { initDebugMode } from '@/utils/debugMode';
 import { deviceMode } from '@/utils/deviceMode';
 import type { User } from '@/types/auth';
 
 let sidebarOpen = true;
 let infoPanelOpen = false;
+
+// --- Mobile carousel helpers ---
+
+function setMobilePanelClass(panel: 'sidebar' | 'chat' | 'info'): void {
+  document.body.classList.remove('mobile-panel-sidebar', 'mobile-panel-chat', 'mobile-panel-info');
+  document.body.classList.add(`mobile-panel-${panel}`);
+}
+
+function scrollToPanel(panel: 'sidebar' | 'chat' | 'info', instant = false): void {
+  const container = document.querySelector('.app-container') as HTMLElement;
+  if (!container || window.innerWidth > 768) return;
+  const w = window.innerWidth;
+  const x = panel === 'sidebar' ? 0 : panel === 'chat' ? w : w * 2;
+  if (instant) {
+    container.scrollLeft = x;
+  } else {
+    container.scrollTo({ left: x, behavior: 'smooth' });
+  }
+}
+
+function initMobileCarousel(): void {
+  if (window.innerWidth > 768) return;
+
+  // Start on chat panel instantly (no animation)
+  scrollToPanel('chat', true);
+  sidebarOpen = false;
+  infoPanelOpen = false;
+  setMobilePanelClass('chat');
+
+  const container = document.querySelector('.app-container') as HTMLElement;
+  if (!container) return;
+
+  container.addEventListener('scroll', () => {
+    if (window.innerWidth > 768) return;
+    const x = container.scrollLeft;
+    const w = window.innerWidth;
+    if (x < w * 0.5) {
+      sidebarOpen = true;
+      infoPanelOpen = false;
+      setMobilePanelClass('sidebar');
+    } else if (x < w * 1.5) {
+      sidebarOpen = false;
+      infoPanelOpen = false;
+      setMobilePanelClass('chat');
+    } else {
+      sidebarOpen = false;
+      infoPanelOpen = true;
+      setMobilePanelClass('info');
+    }
+  }, { passive: true });
+}
 
 // Initialize the authenticated application
 function initAuthenticatedApp(user: User): void {
@@ -79,63 +129,8 @@ function initAuthenticatedApp(user: User): void {
     handleCloseSidebar
   );
 
-  // Initialize swipe gesture for mobile
-  const mainContent = document.querySelector('.app-main');
-  if (mainContent) {
-    new SwipeGestureHandler({
-      element: mainContent as HTMLElement,
-      onSwipeRight: () => {
-        if (window.innerWidth <= 768) {
-          if (infoPanelOpen) handleCloseInfoPanel();
-          else if (!sidebarOpen) handleToggleSidebar();
-        }
-      },
-      onSwipeLeft: () => {
-        if (window.innerWidth <= 768) {
-          if (sidebarOpen) handleCloseSidebar();
-          else if (!infoPanelOpen) handleToggleInfoPanel();
-        }
-      },
-      threshold: 50
-    });
-  }
-
-  // Swipe left on conversation panel to close it
-  const sidebarEl = document.getElementById('conversation-sidebar');
-  if (sidebarEl) {
-    new SwipeGestureHandler({
-      element: sidebarEl,
-      onSwipeLeft: () => {
-        if (window.innerWidth <= 768 && sidebarOpen) handleCloseSidebar();
-      },
-      onSwipeRight: () => {},
-      threshold: 50
-    });
-  }
-
-  // Swipe right on info panel to close it
-  const infoPanelEl = document.getElementById('info-panel');
-  if (infoPanelEl) {
-    new SwipeGestureHandler({
-      element: infoPanelEl,
-      onSwipeRight: () => {
-        if (window.innerWidth <= 768 && infoPanelOpen) handleCloseInfoPanel();
-      },
-      onSwipeLeft: () => {},
-      threshold: 50
-    });
-  }
-
-  // Backdrop click to close on mobile
-  const backdrop = document.getElementById('sidebar-backdrop');
-  if (backdrop) {
-    backdrop.addEventListener('click', () => {
-      if (window.innerWidth <= 768) {
-        if (sidebarOpen) handleToggleSidebar();
-        else if (infoPanelOpen) handleToggleInfoPanel();
-      }
-    });
-  }
+  // Initialize mobile carousel (replaces swipe gesture handlers)
+  initMobileCarousel();
 
   // Listen for conversation updates
   window.addEventListener('conversation-created', updateSidebar);
@@ -152,9 +147,9 @@ function handleSelectConversation(id: string): void {
   loadConversation(id);
   updateSidebar();
 
-  // Close sidebar on mobile after selection
+  // Scroll to chat panel on mobile after selection
   if (window.innerWidth <= 768) {
-    handleToggleSidebar();
+    scrollToPanel('chat');
   }
 }
 
@@ -162,9 +157,9 @@ function handleNewConversation(): void {
   startNewConversation();
   updateSidebar();
 
-  // Close sidebar on mobile after action
+  // Scroll to chat panel on mobile after action
   if (window.innerWidth <= 768) {
-    handleToggleSidebar();
+    scrollToPanel('chat');
   }
 }
 
@@ -185,12 +180,21 @@ function handlePinConversation(id: string): void {
 }
 
 function handleCloseSidebar(): void {
+  if (window.innerWidth <= 768) {
+    scrollToPanel('chat');
+    return;
+  }
   if (sidebarOpen) {
     handleToggleSidebar();
   }
 }
 
 function handleToggleInfoPanel(): void {
+  if (window.innerWidth <= 768) {
+    scrollToPanel(infoPanelOpen ? 'chat' : 'info');
+    return;
+  }
+
   infoPanelOpen = !infoPanelOpen;
 
   const infoPanel = document.getElementById('info-panel');
@@ -235,12 +239,21 @@ function handleToggleInfoPanel(): void {
 }
 
 function handleCloseInfoPanel(): void {
+  if (window.innerWidth <= 768) {
+    scrollToPanel('chat');
+    return;
+  }
   if (infoPanelOpen) {
     handleToggleInfoPanel();
   }
 }
 
 function handleToggleSidebar(): void {
+  if (window.innerWidth <= 768) {
+    scrollToPanel(sidebarOpen ? 'chat' : 'sidebar');
+    return;
+  }
+
   sidebarOpen = !sidebarOpen;
 
   // If opening sidebar, close info panel first (mutual exclusion)
@@ -286,12 +299,10 @@ function handleToggleSidebar(): void {
 }
 
 function handleWindowResize(): void {
-  // Clean up mobile backdrop when resizing to desktop
-  if (window.innerWidth > 768 && (sidebarOpen || infoPanelOpen)) {
-    const backdrop = document.getElementById('sidebar-backdrop');
-    if (backdrop) {
-      backdrop.classList.remove('visible');
-    }
+  if (window.innerWidth <= 768) {
+    // Re-snap to the correct panel after orientation change
+    const panel: 'sidebar' | 'chat' | 'info' = infoPanelOpen ? 'info' : sidebarOpen ? 'sidebar' : 'chat';
+    scrollToPanel(panel, true);
   }
 }
 

@@ -9,12 +9,29 @@
   padding: 0 1rem;
 }
 
-/* Mobile: use full width */
+/* Mobile: use full width, carousel order, and hide input on non-chat panels */
 @media (max-width: 768px) {
   .chat-container {
     min-width: 100%;
     max-width: 100%;
     padding: 0 0.75rem;
+  }
+
+  .app-main,
+  .main-content {
+    order: 2;
+    flex-shrink: 0;
+    min-width: 100vw;
+    max-width: 100vw;
+  }
+
+  /* Hide fixed chat input when not on the chat carousel panel */
+  .device-mobile .chat-input-container {
+    display: none;
+  }
+
+  .device-mobile.mobile-panel-chat .chat-input-container {
+    display: block;
   }
 }
 
