@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(echo tools check done:*)",
-      "Bash(cd /c/Git/dadi/frontend && npx tsc --noEmit 2>&1)"
+      "Bash(cd /c/Git/dadi/frontend && npx tsc --noEmit 2>&1)",
+      "Bash(dotnet build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node_modules/.bin/tsc:*)",
+      "Bash(npm run:*)"
     ]
   }
 }

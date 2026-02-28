@@ -10,6 +10,7 @@
         "AZURE_OPENAI_KEY": "your-api-key-here",
         "AZURE_OPENAI_DEPLOYMENT": "chat",
         "WHITELISTED_EMAILS": "user1@example.com,user2@example.com",
-        "BYPASS_AUTH_FOR_LOCAL_DEV": "true"
+        "BYPASS_AUTH_FOR_LOCAL_DEV": "true",
+        "GITHUB_TOKEN": "your-github-pat-here"
     }
 }

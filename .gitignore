@@ -54,3 +54,4 @@ coverage/
 *.tmp
 .cache/
 .temp/
+.claude/settings.local.json
