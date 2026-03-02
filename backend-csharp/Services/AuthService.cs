@@ -1,7 +1,6 @@
 using System.Text;
 using System.Text.Json;
 using DadiChatBot.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 
@@ -29,6 +28,11 @@ public class AuthService
                 .Select(e => e.Trim().ToLowerInvariant())
                 .Where(e => !string.IsNullOrEmpty(e))
                 .ToArray();
+
+            foreach (var item in _whitelistedEmails)
+            {
+                _logger.LogWarning("Allowed email: {item}", item);
+            }
         }
     }
 
