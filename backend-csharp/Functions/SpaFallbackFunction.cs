@@ -1,6 +1,5 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 
 namespace DadiChatBot.Functions;
 
@@ -23,26 +22,29 @@ public class SpaFallbackFunction
     };
 
     [Function("SpaFallback")]
-    public IActionResult Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "{*path}")] HttpRequest req)
+    public async Task<HttpResponseData> Run(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "{*path}")] HttpRequestData req)
     {
         var wwwroot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "wwwroot"));
-        var requestPath = req.RouteValues["path"]?.ToString() ?? string.Empty;
+        var requestPath = req.Url.AbsolutePath.TrimStart('/');
+
+        string filePath = Path.Combine(wwwroot, "index.html");
+        string contentType = "text/html";
 
         if (!string.IsNullOrEmpty(requestPath))
         {
-            var filePath = Path.GetFullPath(Path.Combine(wwwroot, requestPath));
-
-            // Security: reject path traversal attempts
-            if (filePath.StartsWith(wwwroot, StringComparison.OrdinalIgnoreCase) && File.Exists(filePath))
+            var candidate = Path.GetFullPath(Path.Combine(wwwroot, requestPath));
+            if (candidate.StartsWith(wwwroot, StringComparison.OrdinalIgnoreCase) && File.Exists(candidate))
             {
+                filePath = candidate;
                 var ext = Path.GetExtension(filePath);
-                var contentType = MimeTypes.TryGetValue(ext, out var mime) ? mime : "application/octet-stream";
-                return new PhysicalFileResult(filePath, contentType);
+                contentType = MimeTypes.TryGetValue(ext, out var mime) ? mime : "application/octet-stream";
             }
         }
 
-        // SPA fallback: return index.html for all unmatched routes
-        return new PhysicalFileResult(Path.Combine(wwwroot, "index.html"), "text/html");
+        var response = req.CreateResponse(System.Net.HttpStatusCode.OK);
+        response.Headers.Add("Content-Type", contentType);
+        await response.Body.WriteAsync(await File.ReadAllBytesAsync(filePath));
+        return response;
     }
 }
