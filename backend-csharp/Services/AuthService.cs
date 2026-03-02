@@ -40,7 +40,7 @@ public class AuthService
     {
         if (!request.Headers.TryGetValues("x-ms-client-principal", out var userHeaders) || !userHeaders.Any())
         {
-            _logger.LogDebug("x-ms-client-principal header not found");
+            _logger.LogInformation("x-ms-client-principal header not found");
             
             var bypassAuth = Environment.GetEnvironmentVariable("BYPASS_AUTH_FOR_LOCAL_DEV");
             if (!string.IsNullOrEmpty(bypassAuth) && bypassAuth.Equals("true", StringComparison.OrdinalIgnoreCase))
