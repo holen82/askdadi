@@ -1,5 +1,5 @@
 import type { User, AuthError } from '@/types/auth';
-import { getApiBaseUrl, getFrontendUrl } from '@/utils/environment';
+import { getApiBaseUrl, getFunctionAppUrl, getFrontendUrl } from '@/utils/environment';
 
 /**
  * Get current user information from backend
@@ -65,7 +65,7 @@ export async function getUserInfo(): Promise<User | null> {
  * Redirects to Function App's Easy Auth logout endpoint
  */
 export function logout(): void {
-  const functionAppUrl = getApiBaseUrl();
+  const functionAppUrl = getFunctionAppUrl();
   const frontendUrl = getFrontendUrl();
   window.location.href = `${functionAppUrl}/.auth/logout?post_logout_redirect_uri=${encodeURIComponent(frontendUrl)}`;
 }
@@ -75,7 +75,7 @@ export function logout(): void {
  * Uses Function App's Easy Auth login endpoint for Google
  */
 export function redirectToLogin(): void {
-  const functionAppUrl = getApiBaseUrl();
+  const functionAppUrl = getFunctionAppUrl();
   const frontendUrl = getFrontendUrl();
   const redirectUri = encodeURIComponent(frontendUrl);
   // Request email scope explicitly from Google

@@ -25,7 +25,7 @@ public class IssueFunction
 
     [Function("createIssue")]
     public async Task<HttpResponseData> Create(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "issues")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/issues")]
         HttpRequestData req,
         CancellationToken cancellationToken)
     {

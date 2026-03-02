@@ -30,7 +30,7 @@ public class ChatFunction
 
     [Function("chat")]
     public async Task<HttpResponseData> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "chat")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/chat")] HttpRequestData req)
     {
         _logger.LogInformation("Chat request received");
 

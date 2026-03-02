@@ -20,7 +20,7 @@ public class UserFunction
 
     [Function("user")]
     public async Task<HttpResponseData> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "user")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/user")] HttpRequestData req)
     {
         _logger.LogInformation("User info request received");
 

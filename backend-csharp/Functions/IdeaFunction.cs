@@ -30,7 +30,7 @@ public class IdeaFunction
 
     [Function("submitIdea")]
     public async Task<HttpResponseData> Submit(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "ideas")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/ideas")]
         HttpRequestData req,
         CancellationToken cancellationToken)
     {
@@ -104,7 +104,7 @@ public class IdeaFunction
 
     [Function("listIdeas")]
     public async Task<HttpResponseData> List(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "ideas")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/ideas")]
         HttpRequestData req,
         CancellationToken cancellationToken)
     {

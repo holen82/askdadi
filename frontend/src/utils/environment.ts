@@ -9,11 +9,18 @@ export interface EnvironmentConfig {
 }
 
 /**
- * Get the API base URL
+ * Get the Function App origin (used for /.auth/ redirects)
  */
-export function getApiBaseUrl(): string {
+export function getFunctionAppUrl(): string {
   const envUrl = import.meta.env.VITE_FUNCTION_APP_URL;
   return envUrl || window.location.origin;
+}
+
+/**
+ * Get the API base URL (includes /api prefix)
+ */
+export function getApiBaseUrl(): string {
+  return getFunctionAppUrl() + '/api';
 }
 
 /**

@@ -30,7 +30,7 @@ public class UserPreferencesFunction
 
     [Function("getChatMode")]
     public async Task<HttpResponseData> GetChatMode(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "userprefs/chatmode")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/userprefs/chatmode")]
         HttpRequestData req,
         CancellationToken cancellationToken)
     {
@@ -71,7 +71,7 @@ public class UserPreferencesFunction
 
     [Function("setChatMode")]
     public async Task<HttpResponseData> SetChatMode(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "userprefs/chatmode")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "api/userprefs/chatmode")]
         HttpRequestData req,
         CancellationToken cancellationToken)
     {
