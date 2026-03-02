@@ -4,11 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 var host = new HostBuilder()
-    .ConfigureFunctionsWebApplication(worker =>
-    {
-        worker.UseDefaultFiles();
-        worker.UseStaticFiles();
-    })
+    .ConfigureFunctionsWebApplication()
     .ConfigureServices((context, services) =>
     {
         services.AddApplicationInsightsTelemetryWorkerService();
