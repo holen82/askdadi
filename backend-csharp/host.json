@@ -18,7 +18,6 @@
     "cors": {
         "supportCredentials": true,
         "allowedOrigins": [
-            "https://dadi.z1.web.core.windows.net",
             "http://localhost:3000",
             "http://localhost:5173"
         ]
