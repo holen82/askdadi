@@ -1,4 +1,4 @@
-const CACHE = 'dadi-v1';
+const CACHE = 'dadi-v2';
 const PRECACHE = ['/', '/index.html', '/manifest.json', '/icon-192.svg', '/icon-512.svg'];
 
 self.addEventListener('install', event => {
@@ -18,8 +18,10 @@ self.addEventListener('activate', event => {
 });
 
 // Network-first: always try network, fall back to cache
+// Only handle same-origin requests — never intercept cross-origin API calls
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  if (new URL(event.request.url).origin !== self.location.origin) return;
 
   event.respondWith(
     fetch(event.request)
