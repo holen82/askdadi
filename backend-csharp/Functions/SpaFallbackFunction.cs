@@ -23,7 +23,7 @@ public class SpaFallbackFunction
 
     [Function("SpaFallback")]
     public async Task<HttpResponseData> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "{*path}")] HttpRequestData req)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "{*path:regex(^(?!api).*)}")] HttpRequestData req)
     {
         var wwwroot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "wwwroot"));
         var requestPath = req.Url.AbsolutePath.TrimStart('/');
