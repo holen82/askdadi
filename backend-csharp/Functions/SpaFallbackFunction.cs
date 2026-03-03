@@ -21,6 +21,20 @@ public class SpaFallbackFunction
         { ".webmanifest", "application/manifest+json" },
     };
 
+    [Function("SpaRoot")]
+    public async Task<HttpResponseData> Root(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "")] HttpRequestData req)
+    {
+        var wwwroot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "wwwroot"));
+        var filePath = Path.Combine(wwwroot, "index.html");
+        var contentType = "text/html";
+
+        var response = req.CreateResponse(System.Net.HttpStatusCode.OK);
+        response.Headers.Add("Content-Type", contentType);
+        await response.Body.WriteAsync(await File.ReadAllBytesAsync(filePath));
+        return response;
+    }
+
     [Function("SpaFallback")]
     public async Task<HttpResponseData> Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "{*path:regex(^(?!api).*)}")] HttpRequestData req)
