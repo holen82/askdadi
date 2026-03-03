@@ -19,6 +19,7 @@ build/
 # Azure
 .azure/
 local.settings.json
+appsettings.Development.json
 *.publish.xml
 *.PublishSettings
 

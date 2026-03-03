@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using DadiChatBot.Models;
-using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 namespace DadiChatBot.Services;
@@ -36,12 +36,12 @@ public class AuthService
         }
     }
 
-    public User? ExtractUserFromHeaders(HttpRequestData request)
+    public User? ExtractUserFromHeaders(HttpRequest request)
     {
-        if (!request.Headers.TryGetValues("x-ms-client-principal", out var userHeaders) || !userHeaders.Any())
+        if (!request.Headers.TryGetValue("x-ms-client-principal", out var userHeaderValues) || string.IsNullOrEmpty(userHeaderValues.ToString()))
         {
             _logger.LogInformation("x-ms-client-principal header not found");
-            
+
             var bypassAuth = Environment.GetEnvironmentVariable("BYPASS_AUTH_FOR_LOCAL_DEV");
             if (!string.IsNullOrEmpty(bypassAuth) && bypassAuth.Equals("true", StringComparison.OrdinalIgnoreCase))
             {
@@ -58,13 +58,13 @@ public class AuthService
                     }
                 };
             }
-            
+
             return null;
         }
 
         try
         {
-            var userHeader = userHeaders.First();
+            var userHeader = userHeaderValues.ToString();
             var decodedBytes = Convert.FromBase64String(userHeader);
             var decodedUser = Encoding.UTF8.GetString(decodedBytes);
             

@@ -7,7 +7,9 @@
       "Bash(npx tsc:*)",
       "Bash(node_modules/.bin/tsc:*)",
       "Bash(npm run:*)",
-      "Bash(find C:\\\\git\\\\askdadi\\\\frontend\\\\src:*)"
+      "Bash(find C:\\\\git\\\\askdadi\\\\frontend\\\\src:*)",
+      "Bash(test:*)",
+      "Bash(git:*)"
     ]
   }
 }

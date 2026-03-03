@@ -22,8 +22,8 @@ public class UserPreferencesService
     {
         _logger = logger;
 
-        var connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage")
-            ?? throw new InvalidOperationException("AzureWebJobsStorage environment variable is not set.");
+        var connectionString = Environment.GetEnvironmentVariable("AZURE_STORAGE_CONNECTION_STRING")
+            ?? throw new InvalidOperationException("AZURE_STORAGE_CONNECTION_STRING environment variable is not set.");
 
         var serviceClient = new BlobServiceClient(connectionString);
         _containerClient = serviceClient.GetBlobContainerClient("userprefs");
