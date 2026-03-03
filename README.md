@@ -12,71 +12,70 @@ A secure, Azure-hosted AI chatbot application with Google OAuth authentication a
 - **Slash Commands** - Built-in tool framework with `/idea`, `/ideas`, `/issue`, `/chatmode`
 - **Idea Bank** - Submit and list ideas stored in Azure Blob Storage
 - **GitHub Issue Creation** - Create GitHub issues directly from chat with `/issue`
-- **AI Auto-Resolve** - Nightly timer that automatically resolves GitHub issues by generating code and opening PRs
+- **AI Auto-Resolve** - Automatically resolves GitHub issues by generating code and opening PRs
 - **Mobile-Responsive UI** - Carousel-style panel navigation on mobile devices
 - **PWA Support** - Installable as a Progressive Web App via service worker
 - **Modern Chat Interface** - Clean, responsive UI with markdown rendering and syntax highlighting
-- **Fully Cloud-hosted** - Azure Storage + C# Function App
+- **Fully Cloud-hosted** - Azure App Service
 - **Auto-deployment** - GitHub Actions CI/CD pipeline
 
 ## Architecture
 
-- **Frontend**: TypeScript + Vite + Vanilla TS → Azure Storage Static Website
-- **Backend**: C# Azure Functions (.NET 8 isolated worker) → Azure Function App
+- **Frontend**: TypeScript + Vite + Vanilla TS → bundled into `wwwroot/`, served by the backend
+- **Backend**: C# ASP.NET Core (.NET 10) → Azure App Service (`app-dadi`)
 - **Storage**: Azure Blob Storage (ideas, user preferences)
 - **AI**: Azure OpenAI Service
-- **Auth**: Azure Easy Auth on Function App (Google)
+- **Auth**: Azure Easy Auth on App Service (Google)
 - **GitHub Integration**: GitHub API (issue creation, auto-resolve PRs)
-- **Deployment**: Separate GitHub Actions workflows
+- **Deployment**: Single GitHub Actions workflow (builds frontend + backend together)
+
+The frontend and backend are deployed together as a single Azure App Service. The frontend is built by CI and copied into `backend-csharp/wwwroot/` before the .NET app is published. The ASP.NET Core app serves static files from `wwwroot/` and falls back to `index.html` for SPA routing.
 
 ## Quick Start
 
 ### Prerequisites
 
 - Azure subscription with:
-  - Azure Storage account (with static website hosting enabled)
-  - Azure Function App (.NET 8 isolated worker)
+  - Azure App Service (Windows or Linux, .NET 10)
+  - Azure Storage account (for ideas and user preferences)
   - Azure OpenAI resource with deployed model
-  - Easy Auth configured on Function App (Google OAuth)
+  - Easy Auth configured on App Service (Google OAuth)
 - GitHub repository with required secrets configured
 
 ### Setup
 
 1. **Configure Azure Resources**
-   - Follow [docs/azure-setup.md](docs/azure-setup.md) to create required resources
-   - Follow [docs/azure-storage-setup.md](docs/azure-storage-setup.md) for frontend hosting
-   - Follow [docs/function-app-setup.md](docs/function-app-setup.md) for backend
+   - Create an Azure App Service targeting .NET 10
+   - Create an Azure Storage account for blob data
+   - Create an Azure OpenAI resource and deploy a model
 
-2. **Configure Function App**
-   - Set environment variables in Azure Function App Configuration:
+2. **Configure App Service**
+   - Set environment variables in Azure App Service → Configuration → Application settings:
      - `AZURE_OPENAI_ENDPOINT`
      - `AZURE_OPENAI_KEY`
      - `AZURE_OPENAI_DEPLOYMENT`
      - `WHITELISTED_EMAILS`
-     - `ALLOWED_ORIGINS` (include Storage static website URL)
-     - `AzureWebJobsStorage` (Azure Storage connection string for ideas/preferences)
+     - `AZURE_STORAGE_CONNECTION_STRING`
      - `GITHUB_TOKEN` (GitHub personal access token for issue creation and auto-resolve)
 
 3. **Configure Easy Auth**
-   - Enable Authentication on Function App
+   - Enable Authentication on App Service
    - Add Google identity provider
    - Configure redirect URLs
 
 4. **Deploy**
    - Push to `master` branch to trigger automatic deployment via GitHub Actions
-   - Backend: Deploys to Azure Function App
-   - Frontend: Deploys to Azure Storage `$web` container
+   - The workflow builds the frontend, copies it to `wwwroot/`, then publishes the .NET project to Azure App Service
 
 5. **Access**
-   - Navigate to your Azure Storage static website URL
+   - Navigate to `https://app-dadi.azurewebsites.net`
    - Login with Google using a whitelisted email
    - Start chatting with Dadi!
 
 ## Documentation
 
 - [Azure Setup Guide](docs/azure-setup.md) - Create Azure resources
-- [Azure Storage Setup](docs/azure-storage-setup.md) - Configure static website hosting
-- [Function App Setup](docs/function-app-setup.md) - Configure C# Function App
+- [Function App Setup](docs/function-app-setup.md) - Configure the App Service
 - [Configuration Guide](docs/configuration.md) - Configure the application
 - [GitHub Secrets Setup](docs/github-secrets.md) - Configure GitHub Actions
 
@@ -93,11 +92,11 @@ dadi/
 │   │   ├── types/         # TypeScript type definitions
 │   │   └── utils/         # Utility functions (authGuard, deviceMode, debugMode, errors, tokenUtils)
 │   └── public/            # Static assets
-├── backend-csharp/        # C# Azure Functions backend
-│   ├── Functions/         # HTTP/timer trigger functions (User, Chat, Idea, Issue, UserPreferences, AutoResolve)
+├── backend-csharp/        # C# ASP.NET Core backend
+│   ├── Controllers/       # HTTP controllers (User, Chat, Ideas, Issues, UserPreferences)
 │   ├── Models/            # Data models
 │   ├── Services/          # Business logic (Auth, OpenAI, IdeaStorage, UserPreferences, GitHub, AutoResolve)
-│   └── Utils/             # Utility functions
+│   └── wwwroot/           # Built frontend assets (populated by CI)
 ├── persona/               # AI persona definitions
 ├── docs/                  # Documentation
 └── .github/workflows/     # GitHub Actions CI/CD
@@ -118,30 +117,27 @@ npm run build     # Build for production
 cd backend-csharp
 dotnet restore
 dotnet build
-func start        # Start Azure Functions locally (port 7071)
+dotnet run        # Start ASP.NET Core locally (port 5000/5001 or as configured)
 ```
 
 ### Environment Variables
 
 **Frontend (.env.development):**
 ```
-VITE_FUNCTION_APP_URL=http://localhost:7071
+VITE_FUNCTION_APP_URL=http://localhost:5000
 VITE_BYPASS_AUTH_FOR_LOCAL_DEV=true
 ```
 
-**Backend (local.settings.json):**
+**Backend (appsettings.Development.json):**
 ```json
 {
-  "Values": {
-    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
-    "AZURE_OPENAI_ENDPOINT": "https://your-openai.openai.azure.com/",
-    "AZURE_OPENAI_KEY": "your-key",
-    "AZURE_OPENAI_DEPLOYMENT": "chat",
-    "WHITELISTED_EMAILS": "user1@example.com,user2@example.com",
-    "BYPASS_AUTH_FOR_LOCAL_DEV": "true",
-    "GITHUB_TOKEN": "your-github-pat-here"
-  }
+  "AZURE_STORAGE_CONNECTION_STRING": "UseDevelopmentStorage=true",
+  "AZURE_OPENAI_ENDPOINT": "https://your-openai.openai.azure.com/",
+  "AZURE_OPENAI_KEY": "your-key",
+  "AZURE_OPENAI_DEPLOYMENT": "chat",
+  "WHITELISTED_EMAILS": "user1@example.com,user2@example.com",
+  "BYPASS_AUTH_FOR_LOCAL_DEV": "true",
+  "GITHUB_TOKEN": "your-github-pat-here"
 }
 ```
 
@@ -158,7 +154,7 @@ VITE_BYPASS_AUTH_FOR_LOCAL_DEV=true
 
 ## Auto-Resolve
 
-The `AutoResolve` timer function runs daily at 02:00 UTC. It:
+The `AutoResolveService` can be triggered to resolve open GitHub issues. It:
 1. Fetches open GitHub issues labelled `from-chat` that do not yet have the `autoresolve` label
 2. Uses Azure OpenAI to generate an implementation plan and code changes
 3. Commits the changes to a new branch and opens a pull request that closes the issue
@@ -170,9 +166,9 @@ Requires `GITHUB_TOKEN` with `repo` scope and `AZURE_OPENAI_*` variables to be c
 - Authentication required for all endpoints
 - Email whitelist enforced on backend
 - Easy Auth handles OAuth flow
-- API keys stored in Azure configuration (not in code)
+- API keys stored in Azure App Service configuration (not in code)
 - HTTPS enforced by Azure
-- CORS configured for specific origins
+- CORS configured for local development only
 
 
 ## License
