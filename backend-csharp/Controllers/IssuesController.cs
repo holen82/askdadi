@@ -26,19 +26,16 @@ public class IssuesController(
         if (request == null || string.IsNullOrWhiteSpace(request.Title))
             return BadRequest(new ErrorResponse { Error = "Bad Request", Message = "Title is required" });
 
-        if (request.Title.Length > 256)
-            return BadRequest(new ErrorResponse { Error = "Bad Request", Message = "Title must be 256 characters or fewer" });
-
         if (!gitHubService.IsConfigured())
             return StatusCode(503, new ErrorResponse { Error = "Service Unavailable", Message = "GitHub integration not configured" });
 
         try
         {
             var name = authService.GetUserName(user) ?? email ?? "Unknown";
-            var (issueNumber, issueUrl) = await gitHubService.CreateIssueAsync(request.Title, cancellationToken);
+            var (issueNumber, issueUrl, issueBody) = await gitHubService.CreateIssueAsync(request.Title, cancellationToken);
             logger.LogInformation("Issue created by {Name}: #{Number} {Url}", name, issueNumber, issueUrl);
 
-            var issue = new GitHubIssue { Number = issueNumber, Title = request.Title };
+            var issue = new GitHubIssue { Number = issueNumber, Title = request.Title, Body = issueBody };
             _ = Task.Run(() => autoResolveService.ProcessSingleIssueAsync(issue, CancellationToken.None));
 
             return StatusCode(201, new CreateIssueResponse { Url = issueUrl });

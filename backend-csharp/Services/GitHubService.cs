@@ -40,16 +40,31 @@ public class GitHubService
 
     public bool IsConfigured() => !string.IsNullOrEmpty(_token);
 
-    public async Task<(int Number, string Url)> CreateIssueAsync(string title, CancellationToken cancellationToken)
+    private const int GitHubTitleMaxLength = 256;
+
+    public async Task<(int Number, string Url, string? Body)> CreateIssueAsync(string userInput, CancellationToken cancellationToken)
     {
         if (!IsConfigured())
             throw new InvalidOperationException("GitHub token not configured.");
 
-        var body = JsonSerializer.Serialize(new
+        string title;
+        string? issueBody;
+        if (userInput.Length > GitHubTitleMaxLength)
         {
-            title,
-            labels = new[] { "from-chat" }
-        }, CamelCaseOptions);
+            title = userInput[..(GitHubTitleMaxLength - 3)] + "...";
+            issueBody = userInput;
+        }
+        else
+        {
+            title = userInput;
+            issueBody = null;
+        }
+
+        var payload = new Dictionary<string, object?> { ["title"] = title, ["labels"] = new[] { "from-chat" } };
+        if (issueBody != null)
+            payload["body"] = issueBody;
+
+        var body = JsonSerializer.Serialize(payload, CamelCaseOptions);
 
         var response = await _http.PostAsync(
             $"https://api.github.com/repos/{Repo}/issues",
@@ -67,7 +82,7 @@ public class GitHubService
         var url = doc.RootElement.GetProperty("html_url").GetString()
                   ?? throw new InvalidOperationException("Missing html_url in GitHub response.");
         var number = doc.RootElement.GetProperty("number").GetInt32();
-        return (number, url);
+        return (number, url, issueBody);
     }
 
     public async Task<List<GitHubIssue>> GetIssuesForAutoResolveAsync(CancellationToken ct = default)

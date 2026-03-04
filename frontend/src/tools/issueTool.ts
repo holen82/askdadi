@@ -1,8 +1,6 @@
 import { registerTool, type ToolContext } from './toolRegistry';
 import { getApiBaseUrl } from '@/utils/environment';
 
-const MAX_TITLE_CHARS = 256;
-
 export function registerIssueTools(): void {
   registerTool({
     name: 'issue',
@@ -10,11 +8,6 @@ export function registerIssueTools(): void {
     usage: '<tittel>',
     minArgs: 1,
     async execute(args: string, context: ToolContext): Promise<void> {
-      if (args.length > MAX_TITLE_CHARS) {
-        context.setError(`Tittelen er for lang. Maks ${MAX_TITLE_CHARS} tegn tillatt.`);
-        return;
-      }
-
       const bypassAuth = import.meta.env.VITE_BYPASS_AUTH_FOR_LOCAL_DEV === 'true';
 
       try {
