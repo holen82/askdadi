@@ -17,18 +17,23 @@ export function renderInfoPanel(isOpen: boolean): string {
             <li class="command-item command-item--clickable"
                 role="button"
                 tabindex="0"
-                data-tool-name="idea"
+                data-tool-name="ide"
                 data-requires-input="true">
-              <span class="command-name">/idea &lt;tekst&gt;</span>
+              <span class="command-name">/ide &lt;tekst&gt;</span>
               <span class="command-desc">Send inn en idé</span>
             </li>
             <li class="command-item command-item--clickable"
                 role="button"
                 tabindex="0"
-                data-tool-name="ideas"
+                data-tool-name="ide"
+                data-tool-args="liste"
                 data-requires-input="false">
-              <span class="command-name">/ideas</span>
+              <span class="command-name">/ide liste</span>
               <span class="command-desc">Vis alle innsendte ideer</span>
+            </li>
+            <li class="command-item">
+              <span class="command-name">/ide slett &lt;nummer&gt;</span>
+              <span class="command-desc">Slett en idé (bruk nummeret fra /ide liste)</span>
             </li>
           </ul>
         </section>
@@ -56,8 +61,9 @@ export function initInfoPanel(
     const toolItem = target.closest('[data-tool-name]') as HTMLElement | null;
     if (toolItem) {
       const toolName = toolItem.dataset.toolName!;
+      const toolArgs = toolItem.dataset.toolArgs;
       const requiresInput = toolItem.dataset.requiresInput === 'true';
-      onToolClick(toolName, requiresInput);
+      onToolClick(toolArgs ? `${toolName} ${toolArgs}` : toolName, requiresInput);
     }
   });
 
@@ -68,8 +74,9 @@ export function initInfoPanel(
     if (toolItem) {
       e.preventDefault();
       const toolName = toolItem.dataset.toolName!;
+      const toolArgs = toolItem.dataset.toolArgs;
       const requiresInput = toolItem.dataset.requiresInput === 'true';
-      onToolClick(toolName, requiresInput);
+      onToolClick(toolArgs ? `${toolName} ${toolArgs}` : toolName, requiresInput);
     }
   });
 }

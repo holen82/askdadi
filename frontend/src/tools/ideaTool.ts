@@ -13,16 +13,39 @@ function formatDate(iso: string): string {
 
 export function registerIdeaTools(): void {
   registerTool({
-    name: 'idea',
+    name: 'ide',
     description: 'Send inn en idé eller slett en idé',
-    usage: '<tekst> eller delete <nummer>',
+    usage: '<tekst> eller slett <nummer>',
     minArgs: 1,
     async execute(args: string, context: ToolContext): Promise<void> {
-      if (args.startsWith('delete ')) {
-        const nStr = args.slice('delete '.length).trim();
+      if (args === 'liste') {
+        let ideas;
+        try {
+          ideas = await ideaService.listIdeas();
+        } catch (e) {
+          context.setError(e instanceof Error ? e.message : 'Kunne ikke hente ideer.');
+          return;
+        }
+
+        if (ideas.length === 0) {
+          context.addSystemMessage('Ingen ideer er lagret ennå.');
+          return;
+        }
+
+        const lines = [`**Innsendte ideer (${ideas.length}):**`];
+        ideas.forEach((idea, i) => {
+          lines.push(`${i + 1}. ${idea.text} *(${idea.author}, ${formatDate(idea.timestamp)})*`);
+        });
+        lines.push('');
+        context.addSystemMessage(lines.join('\n'));
+        return;
+      }
+
+      if (args.startsWith('slett ')) {
+        const nStr = args.slice('slett '.length).trim();
         const n = parseInt(nStr, 10);
         if (!nStr || isNaN(n) || n < 1) {
-          context.setError('Bruk: /idea delete <nummer>  (nummeret fra /ideas-listen)');
+          context.setError('Bruk: /ide slett <nummer>  (nummeret fra /ide liste)');
           return;
         }
 
@@ -64,32 +87,5 @@ export function registerIdeaTools(): void {
     }
   });
 
-  registerTool({
-    name: 'ideas',
-    description: 'Vis alle innsendte ideer',
-    usage: '',
-    minArgs: 0,
-    async execute(_args: string, context: ToolContext): Promise<void> {
-      let ideas;
-      try {
-        ideas = await ideaService.listIdeas();
-      } catch (e) {
-        context.setError(e instanceof Error ? e.message : 'Kunne ikke hente ideer.');
-        return;
-      }
 
-      if (ideas.length === 0) {
-        context.addSystemMessage('Ingen ideer er lagret ennå.');
-        return;
-      }
-
-      const lines = [`**Innsendte ideer (${ideas.length}):**`];
-      ideas.forEach((idea, i) => {
-        lines.push(`${i + 1}. ${idea.text} *(${idea.author}, ${formatDate(idea.timestamp)})*`);
-      });
-      lines.push('');
-
-      context.addSystemMessage(lines.join('\n'));
-    }
-  });
 }
