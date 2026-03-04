@@ -7,51 +7,38 @@ namespace DadiChatBot.Controllers;
 
 [ApiController]
 [Route("api")]
-public class ChatController : ControllerBase
+public class ChatController(
+    ILogger<ChatController> logger,
+    AuthService authService,
+    OpenAIService openAIService,
+    UserPreferencesService userPreferencesService) : ControllerBase
 {
-    private readonly ILogger<ChatController> _logger;
-    private readonly AuthService _authService;
-    private readonly OpenAIService _openAIService;
-    private readonly UserPreferencesService _userPreferencesService;
-
-    public ChatController(
-        ILogger<ChatController> logger,
-        AuthService authService,
-        OpenAIService openAIService,
-        UserPreferencesService userPreferencesService)
-    {
-        _logger = logger;
-        _authService = authService;
-        _openAIService = openAIService;
-        _userPreferencesService = userPreferencesService;
-    }
-
     [HttpPost("chat")]
     public async Task Post([FromBody] ChatRequest? chatRequest)
     {
-        _logger.LogInformation("Chat request received");
+        logger.LogInformation("Chat request received");
 
-        var user = _authService.ExtractUserFromHeaders(Request);
+        var user = authService.ExtractUserFromHeaders(Request);
         if (user == null)
         {
-            _logger.LogWarning("No user found in request headers");
+            logger.LogWarning("No user found in request headers");
             Response.StatusCode = 401;
             await Response.WriteAsJsonAsync(new ErrorResponse { Error = "Unauthorized", Message = "User not authenticated" });
             return;
         }
 
-        var email = _authService.GetUserEmail(user);
-        if (!_authService.IsWhitelisted(email))
+        var email = authService.GetUserEmail(user);
+        if (!authService.IsWhitelisted(email))
         {
-            _logger.LogWarning("User not whitelisted: {Email}", email);
+            logger.LogWarning("User not whitelisted: {Email}", email);
             Response.StatusCode = 403;
             await Response.WriteAsJsonAsync(new ErrorResponse { Error = "Forbidden", Message = "User not authorized to access this application" });
             return;
         }
 
         string chatMode;
-        try { chatMode = (await _userPreferencesService.GetPreferencesAsync(user.UserId)).ChatMode; }
-        catch (Exception ex) { _logger.LogWarning(ex, "Pref fetch failed, defaulting to fun"); chatMode = "fun"; }
+        try { chatMode = (await userPreferencesService.GetPreferencesAsync(user.UserId)).ChatMode; }
+        catch (Exception ex) { logger.LogWarning(ex, "Pref fetch failed, defaulting to fun"); chatMode = "fun"; }
 
         if (chatRequest?.Messages == null || chatRequest.Messages.Length == 0)
         {
@@ -60,15 +47,15 @@ public class ChatController : ControllerBase
             return;
         }
 
-        if (!_openAIService.IsConfigured())
+        if (!openAIService.IsConfigured())
         {
-            _logger.LogError("OpenAI not configured");
+            logger.LogError("OpenAI not configured");
             Response.StatusCode = 503;
             await Response.WriteAsJsonAsync(new ErrorResponse { Error = "Service Unavailable", Message = "AI service is not configured" });
             return;
         }
 
-        _logger.LogInformation("Processing chat for user {Email} with {MessageCount} messages", email, chatRequest.Messages.Length);
+        logger.LogInformation("Processing chat for user {Email} with {MessageCount} messages", email, chatRequest.Messages.Length);
 
         var acceptHeader = Request.Headers["Accept"].ToString();
         if (acceptHeader.Contains("text/event-stream"))
@@ -79,13 +66,13 @@ public class ChatController : ControllerBase
 
         try
         {
-            var response = await _openAIService.ChatAsync(chatRequest.Messages, chatMode);
-            _logger.LogInformation("Chat response generated successfully");
+            var response = await openAIService.ChatAsync(chatRequest.Messages, chatMode);
+            logger.LogInformation("Chat response generated successfully");
             await Response.WriteAsJsonAsync(new ChatResponse { Message = response });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing chat");
+            logger.LogError(ex, "Error processing chat");
             if (ex.Message == "CONTEXT_LENGTH_EXCEEDED")
             {
                 Response.StatusCode = 422;
@@ -107,7 +94,7 @@ public class ChatController : ControllerBase
 
         try
         {
-            await foreach (var chunk in _openAIService.ChatStreamAsync(messages, chatMode))
+            await foreach (var chunk in openAIService.ChatStreamAsync(messages, chatMode))
             {
                 await Response.WriteAsync($"data: {JsonSerializer.Serialize(new { chunk })}\n\n");
                 await Response.Body.FlushAsync();
@@ -118,7 +105,7 @@ public class ChatController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during streaming");
+            logger.LogError(ex, "Error during streaming");
             var isContextLengthError = ex.Message == "CONTEXT_LENGTH_EXCEEDED"
                 || ex.Message.Contains("context_length_exceeded", StringComparison.OrdinalIgnoreCase)
                 || ex.Message.Contains("maximum context length", StringComparison.OrdinalIgnoreCase);

@@ -40,7 +40,7 @@ public class GitHubService
 
     public bool IsConfigured() => !string.IsNullOrEmpty(_token);
 
-    public async Task<string> CreateIssueAsync(string title, CancellationToken cancellationToken)
+    public async Task<(int Number, string Url)> CreateIssueAsync(string title, CancellationToken cancellationToken)
     {
         if (!IsConfigured())
             throw new InvalidOperationException("GitHub token not configured.");
@@ -64,8 +64,10 @@ public class GitHubService
         }
 
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
-        return doc.RootElement.GetProperty("html_url").GetString()
-               ?? throw new InvalidOperationException("Missing html_url in GitHub response.");
+        var url = doc.RootElement.GetProperty("html_url").GetString()
+                  ?? throw new InvalidOperationException("Missing html_url in GitHub response.");
+        var number = doc.RootElement.GetProperty("number").GetInt32();
+        return (number, url);
     }
 
     public async Task<List<GitHubIssue>> GetIssuesForAutoResolveAsync(CancellationToken ct = default)

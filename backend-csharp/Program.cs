@@ -34,6 +34,7 @@ builder.Services.AddSingleton<OpenAIService>();
 builder.Services.AddSingleton<IdeaStorageService>();
 builder.Services.AddSingleton<UserPreferencesService>();
 builder.Services.AddSingleton<GitHubService>();
+builder.Services.AddSingleton<AutoResolveService>();
 
 var app = builder.Build();
 
